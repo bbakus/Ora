@@ -1,0 +1,179 @@
+.aura-visualization-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    margin: 0 auto;
+    border-radius: 0;
+    overflow: visible !important;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+}
+
+.light-mode .aura-visualization-container {
+    box-shadow: none;
+}
+
+.dark-mode .aura-visualization-container {
+    box-shadow: none;
+}
+
+.aura-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    z-index: 0;
+}
+
+.gradient-canvas {
+    position: absolute;
+    width: 100% !important;
+    height: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    border-radius: 0;
+    z-index: 0;
+    display: block;
+    background: transparent;
+    overflow: visible !important;
+}
+
+/* Shape-specific styles */
+.aura-shape-fast,
+.aura-shape-medium-fast,
+.aura-shape-medium-slow,
+.aura-shape-slow,
+.aura-shape-balanced,
+.aura-shape-sparkling,
+.aura-shape-flowing,
+.aura-shape-pulsing {
+    /* All shapes keep the same circular canvas base */
+    border-radius: 50%; 
+    transition: all 0.5s ease;
+}
+
+/* Animation type styles */
+.aura-shape-sparkling {
+    /* Style for sparkling particles */
+    filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.8));
+}
+
+.aura-shape-flowing {
+    /* Style for flowing ripples */
+    filter: drop-shadow(0 0 14px rgba(180, 200, 255, 0.7));
+}
+
+.aura-shape-pulsing {
+    /* Style for pulsing effect */
+    filter: drop-shadow(0 0 18px rgba(220, 220, 255, 0.75));
+}
+
+.aura-shape-balanced {
+    /* Style for the balanced circle */
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.8));
+}
+
+/* Animation speed styles */
+.aura-shape-fast {
+    /* Style for fast animations */
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.7));
+    animation: fast-pulse 2s infinite alternate;
+}
+
+.aura-shape-medium-fast {
+    /* Style for medium-fast animations */
+    filter: drop-shadow(0 0 12px rgba(200, 200, 255, 0.8));
+    animation: medium-fast-pulse 3s infinite alternate;
+}
+
+.aura-shape-medium-slow {
+    /* Style for medium-slow animations */
+    filter: drop-shadow(0 0 10px rgba(180, 180, 255, 0.6));
+    animation: medium-slow-pulse 4s infinite alternate;
+}
+
+.aura-shape-slow {
+    /* Style for slow animations */
+    filter: drop-shadow(0 0 8px rgba(160, 160, 255, 0.5));
+    animation: slow-pulse 5s infinite alternate;
+}
+
+/* Keyframe animations for different speeds */
+@keyframes fast-pulse {
+    0% {
+        filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.7));
+    }
+    100% {
+        filter: drop-shadow(0 0 25px rgba(255, 255, 255, 0.9));
+    }
+}
+
+@keyframes medium-fast-pulse {
+    0% {
+        filter: drop-shadow(0 0 12px rgba(200, 200, 255, 0.8));
+    }
+    100% {
+        filter: drop-shadow(0 0 20px rgba(200, 200, 255, 0.9));
+    }
+}
+
+@keyframes medium-slow-pulse {
+    0% {
+        filter: drop-shadow(0 0 10px rgba(180, 180, 255, 0.6));
+    }
+    100% {
+        filter: drop-shadow(0 0 18px rgba(180, 180, 255, 0.8));
+    }
+}
+
+@keyframes slow-pulse {
+    0% {
+        filter: drop-shadow(0 0 8px rgba(160, 160, 255, 0.5));
+    }
+    100% {
+        filter: drop-shadow(0 0 16px rgba(160, 160, 255, 0.7));
+    }
+}
+
+/* iPhone-specific optimizations */
+@media only screen and (max-width: 1170px) {
+    .aura-visualization-container {
+        width: 300px;
+        height: 300px;
+        overflow: visible !important;
+        z-index: 9;
+        margin: 0 auto; /* Ensure center alignment */
+    }
+    
+    .aura-canvas, .gradient-canvas {
+        width: 100% !important;
+        height: 100% !important;
+        left: 0 !important;
+        top: 0 !important;
+        border-radius: 0 !important;
+        overflow: visible !important;
+    }
+    
+    .aura-shape-fast,
+    .aura-shape-medium-fast,
+    .aura-shape-medium-slow,
+    .aura-shape-slow,
+    .aura-shape-balanced,
+    .aura-shape-sparkling,
+    .aura-shape-flowing,
+    .aura-shape-pulsing {
+        filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.7));
+        overflow: visible !important;
+    }
+}
+
+
+
+
+
+
