@@ -39,6 +39,7 @@ function App() {
             
             {/* Main App */}
             <Route path="/discover" element={<DiscoverScreen />} />
+            <Route path="/discover/:userId" element={<DiscoverScreen />} />
             <Route path="/collections" element={<CollectionsScreen />} />
             <Route path="/about-auras" element={<AboutAurasScreen />} />
           </Routes>

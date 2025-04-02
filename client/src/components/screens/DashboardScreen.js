@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import AuraVisualization from '../AuraVisualization';
 import './DashboardScreen.css';
 
 function DashboardScreen() {
     const { userId } = useParams();
+    const navigate = useNavigate();
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [darkMode, setDarkMode] = useState(false);
+    const [darkMode, setDarkMode] = useState(true); // Always dark mode
 
     console.log("DashboardScreen mounted with userId param:", userId);
     console.log("userId type:", typeof userId);
@@ -153,10 +154,6 @@ function DashboardScreen() {
         }
     };
 
-    const toggleTheme = () => {
-        setDarkMode(!darkMode);
-    };
-
     if (loading) {
         return <div className="loading">Loading your aura...</div>;
     }
@@ -169,12 +166,9 @@ function DashboardScreen() {
     const auraShape = userData?.aura_shape || determineAuraShape(userData?.answer_speed);
 
     return (
-        <div className={`dashboard-container ${darkMode ? 'dark-mode' : 'light-mode'}`}>
+        <div className="dashboard-container dark-mode">
             <header className="dashboard-header">
                 <h1>Hello, {username}</h1>
-                <button className="theme-toggle" onClick={toggleTheme}>
-                    {darkMode ? 'Light Mode' : 'Dark Mode'}
-                </button>
             </header>
             
             <main className="dashboard-content">
@@ -196,7 +190,7 @@ function DashboardScreen() {
                         <h2>Discover</h2>
                         <div className="map-container">
                             {/* Map placeholder */}
-                            <div className="map-placeholder">
+                            <div className="map-placeholder" onClick={() => navigate(`/discover/${userId}`)}>
                                 <div className="map-icon">📍</div>
                                 <p>Current Location</p>
                             </div>
@@ -206,60 +200,87 @@ function DashboardScreen() {
                 
                 {/* Suggestions Widget */}
                 <section className="widget suggestions-widget">
-                    <h2>Nearby Locations with Similar Auras</h2>
+                    <h2>Auras Nearby</h2>
                     <div className="suggestions-container">
-                        <p>Discover places that match your aura's energy.</p>
                         <div className="location-suggestions">
                             {/* This would be populated from the backend */}
                             <div className="location-card">
-                                <h3>Serenity Gardens</h3>
-                                <p>A peaceful retreat with calming energy</p>
-                                <div className="location-aura-match">
-                                    <span>Aura match: 87%</span>
+                                <div className="location-card-content">
+                                    <h3>Serenity Gardens</h3>
                                 </div>
+                                <div className="location-aura-placeholder"></div>
                             </div>
                             <div className="location-card">
-                                <h3>The Vibrant Café</h3>
-                                <p>A lively spot for inspiration and connection</p>
-                                <div className="location-aura-match">
-                                    <span>Aura match: 75%</span>
+                                <div className="location-card-content">
+                                    <h3>The Vibrant Café</h3>
                                 </div>
-                            </div>
-                            <div className="location-card">
-                                <h3>Moonlight Bookshop</h3>
-                                <p>A thoughtful space for reflection</p>
-                                <div className="location-aura-match">
-                                    <span>Aura match: 68%</span>
-                                </div>
+                                <div className="location-aura-placeholder"></div>
                             </div>
                         </div>
-                        <button className="action-button">View More Suggestions</button>
+                        <button className="action-button" onClick={() => navigate(`/discover/${userId}`)}>View More</button>
                     </div>
                 </section>
                 
                 {/* Collections Widget */}
                 <section className="widget collections-widget">
-                    <h2>Your Collections</h2>
                     <div className="collections-container">
-                        {userData?.collections && userData.collections.length > 0 ? (
-                            <ul className="collections-list">
-                                {userData.collections.map(collection => (
-                                    <li key={collection.id} className="collection-item">
-                                        <h3>{collection.name}</h3>
-                                        <p>{collection.items?.length || 0} items</p>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <p>You haven't created any collections yet.</p>
-                        )}
+                        <div className="collections-grid">
+                            {/* Base Collections - Left Column */}
+                            <div className="collections-column base-collections">
+                                <h3 className="column-title">Recents</h3>
+                                <div className="collection-card">
+                                    <div className="collection-content">
+                                        <h3>Serenity Gardens</h3>
+                                    </div>
+                                    <div className="collection-aura-placeholder"></div>
+                                </div>
+                                <div className="collection-card">
+                                    <div className="collection-content">
+                                        <h3>The Vibrant Café</h3>
+                                    </div>
+                                    <div className="collection-aura-placeholder"></div>
+                                </div>
+                                <div className="collection-card">
+                                    <div className="collection-content">
+                                        <h3>Moonlight Bookshop</h3>
+                                    </div>
+                                    <div className="collection-aura-placeholder"></div>
+                                </div>
+                            </div>
+                            
+                            {/* Saved Collections - Right Column */}
+                            <div className="collections-column saved-collections">
+                                <h3 className="column-title">Saved Collections</h3>
+                                <div className="collection-card">
+                                    <div className="collection-content">
+                                        <h3>Coffee Shops</h3>
+                                        <p>5 items</p>
+                                    </div>
+                                    <div className="collection-aura-placeholder"></div>
+                                </div>
+                                <div className="collection-card">
+                                    <div className="collection-content">
+                                        <h3>Weekend Getaways</h3>
+                                        <p>3 items</p>
+                                    </div>
+                                    <div className="collection-aura-placeholder"></div>
+                                </div>
+                                <div className="collection-card">
+                                    <div className="collection-content">
+                                        <h3>Meditation Spots</h3>
+                                        <p>4 items</p>
+                                    </div>
+                                    <div className="collection-aura-placeholder"></div>
+                                </div>
+                            </div>
+                        </div>
                         <button className="action-button">Create New Collection</button>
                     </div>
                 </section>
             </main>
             
             <footer className="dashboard-footer">
-                <button className="footer-button">Understanding Auras</button>
+                <button className="footer-button">Aura Guide</button>
             </footer>
         </div>
     );

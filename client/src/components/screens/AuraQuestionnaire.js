@@ -265,11 +265,51 @@ function AuraQuestionnaire() {
             colorCounts[color] = (colorCounts[color] || 0) + 1;
         });
 
+        // Sort colors by frequency (highest first)
+        const sortedColors = Object.entries(colorCounts)
+            .sort((a, b) => b[1] - a[1]);
+        
+        // Get the top 3 colors
+        let topColors = [];
+        
+        // First add the definite top colors (1st and 2nd)
+        for (let i = 0; i < Math.min(2, sortedColors.length); i++) {
+            topColors.push(sortedColors[i][0]);
+        }
+        
+        // Handle the case where we need to decide on the 3rd color
+        if (sortedColors.length > 2) {
+            // Get all colors tied for 3rd place
+            const thirdPlaceCount = sortedColors[2][1];
+            const tiedColors = sortedColors
+                .slice(2)
+                .filter(entry => entry[1] === thirdPlaceCount)
+                .map(entry => entry[0]);
+                
+            // If there's only one, add it
+            if (tiedColors.length === 1) {
+                topColors.push(tiedColors[0]);
+            } 
+            // If there are multiple tied, randomly select one
+            else if (tiedColors.length > 1) {
+                const randomIndex = Math.floor(Math.random() * tiedColors.length);
+                topColors.push(tiedColors[randomIndex]);
+            }
+        }
+        
+        // Calculate percentages of just the top colors
+        const topColorCounts = {};
+        topColors.forEach(color => {
+            topColorCounts[color] = colorCounts[color];
+        });
+        
+        // Calculate the total count of the selected colors
+        const totalSelectedCounts = Object.values(topColorCounts).reduce((sum, count) => sum + count, 0);
+        
         // Convert to percentages
-        const totalAnswers = Object.values(answers).length;
         const colorPercentages = {};
-        Object.entries(colorCounts).forEach(([color, count]) => {
-            colorPercentages[color] = (count / totalAnswers) * 100;
+        Object.entries(topColorCounts).forEach(([color, count]) => {
+            colorPercentages[color] = (count / totalSelectedCounts) * 100;
         });
 
         // Create gradient stops
