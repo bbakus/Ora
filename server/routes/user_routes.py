@@ -50,5 +50,6 @@ class UserData(Resource):
         return user.to_dict(), 200
 
 # Register routes
-api.add_resource(UserAura, '/api/users/<user_id>/aura')
-api.add_resource(UserData, '/api/users/<user_id>') 
+def register_resources(api):
+    api.add_resource(UserAura, '/api/users/<user_id>/aura')
+    api.add_resource(UserData, '/api/users/<user_id>') 

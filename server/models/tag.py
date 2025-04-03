@@ -11,8 +11,10 @@ class Tag(BaseModel):
     color = db.Column(db.String(7), nullable=False)  # Hex color code
     shape = db.Column(db.String(20), nullable=False)  # Shape of the aura
     
-    # Relationships
+    # Define the many-to-many relationship with locations
     locations = db.relationship('Location', secondary=location_tags, back_populates='tags')
+
+    # Relationships are handled by backref in Location model
 
     def to_dict(self):
         """Convert tag to dictionary for JSON response"""
@@ -23,5 +25,4 @@ class Tag(BaseModel):
             'shape': self.shape,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-            'locations': [location.to_dict() for location in self.locations]
         }

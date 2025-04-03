@@ -64,4 +64,5 @@ class CollectionByID(Resource):
         return '', 204
 
 # Register routes
-api.add_resource(CollectionByID, '/api/users/<int:user_id>/collections', '/api/users/<int:user_id>/collections/<int:collection_id>')
+def register_resources(api):
+    api.add_resource(CollectionByID, '/api/users/<int:user_id>/collections', '/api/users/<int:user_id>/collections/<int:collection_id>')

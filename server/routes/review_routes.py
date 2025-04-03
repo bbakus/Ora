@@ -42,5 +42,6 @@ class ReviewById(Resource):
         return '', 204
 
 # Register routes
-api.add_resource(ReviewList, '/api/reviews')
-api.add_resource(ReviewById, '/api/reviews/<int:review_id>')
+def register_resources(api):
+    api.add_resource(ReviewList, '/api/reviews')
+    api.add_resource(ReviewById, '/api/reviews/<int:review_id>')

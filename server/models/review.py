@@ -8,6 +8,7 @@ class Review(BaseModel):
     __tablename__='reviews'
 
     body = db.Column(db.String(1000), nullable=False)
+    rating = db.Column(db.Integer, nullable=False)
     user_id = db.Column(db.Integer, ForeignKey('users.id'))
     location_id = db.Column(db.Integer, ForeignKey('locations.id'))
 
@@ -19,6 +20,7 @@ class Review(BaseModel):
         return {
             'id': self.id,
             'body': self.body,
+            'rating': self.rating,
             'user_id': self.user_id,
             'location_id': self.location_id,
             'created_at': self.created_at.isoformat() if self.created_at else None,

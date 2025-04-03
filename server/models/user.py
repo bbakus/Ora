@@ -25,20 +25,32 @@ class User(BaseModel):
 
     def to_dict(self):
         """Convert user to dictionary for JSON response"""
-        user_dict = {
-            'id': self.id,
-            'username': self.username,
-            'email': self.email,
-            'aura_color': self.aura_color,
-            'aura_shape': self.aura_shape,
-            'response_speed': self.response_speed,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-            'reviews': [review.to_dict() for review in self.reviews],
-            'collections': [collection.to_dict() for collection in self.collections]
-        }
-        # Make sure the ID is included as a string for consistent handling
-        user_dict['id_str'] = str(self.id)
-        return user_dict
+        try:
+            user_dict = {
+                'id': self.id,
+                'username': self.username,
+                'email': self.email,
+                'aura_color': self.aura_color or None,
+                'aura_shape': self.aura_shape or None,
+                'response_speed': self.response_speed or None,
+                'created_at': self.created_at.isoformat() if self.created_at else None,
+                'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+                'reviews': [review.to_dict() for review in self.reviews] if self.reviews else [],
+                'collections': [collection.to_dict() for collection in self.collections] if self.collections else []
+            }
+            # Make sure the ID is included as a string for consistent handling
+            user_dict['id_str'] = str(self.id)
+            return user_dict
+        except Exception as e:
+            print(f"Error in to_dict: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            # Return a minimal dictionary with just the essential fields
+            return {
+                'id': self.id,
+                'username': self.username,
+                'email': self.email,
+                'id_str': str(self.id)
+            }
 
     

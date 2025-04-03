@@ -215,21 +215,34 @@ function AuraQuestionnaire() {
         if (responseTimes.length === 0) return 'balanced';
 
         const avgResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+        console.log("Average response time:", avgResponseTime); // Debug log
+        
         const fastestResponse = Math.min(...responseTimes);
         const slowestResponse = Math.max(...responseTimes);
         const timeRange = slowestResponse - fastestResponse;
 
         // Define thresholds (in milliseconds)
         const QUICK_THRESHOLD = 2000;  // 2 seconds
-        const SLOW_THRESHOLD = 5000;   // 5 seconds
+        const SLOW_THRESHOLD = 3500;   // Reduced to 3.5 seconds
+        
+        // Force flowing shape for testing
+        const forceShape = localStorage.getItem('forceAuraShape');
+        if (forceShape) {
+            console.log("Forcing aura shape:", forceShape);
+            return forceShape;
+        }
 
         if (avgResponseTime < QUICK_THRESHOLD) {
+            console.log("Shape: sparkling");
             return 'sparkling';  // Quick, energetic responses
         } else if (avgResponseTime > SLOW_THRESHOLD) {
+            console.log("Shape: flowing");
             return 'flowing';    // Slow, thoughtful responses
         } else if (timeRange > 3000) {  // High variance in response times
+            console.log("Shape: pulsing");
             return 'pulsing';    // Variable, dynamic responses
         } else {
+            console.log("Shape: balanced");
             return 'balanced';   // Consistent, moderate responses
         }
     };
@@ -297,32 +310,17 @@ function AuraQuestionnaire() {
             }
         }
         
-        // Calculate percentages of just the top colors
-        const topColorCounts = {};
-        topColors.forEach(color => {
-            topColorCounts[color] = colorCounts[color];
-        });
+        // Ensure we have exactly 3 colors (or fewer if there aren't enough)
+        topColors = topColors.slice(0, 3);
         
-        // Calculate the total count of the selected colors
-        const totalSelectedCounts = Object.values(topColorCounts).reduce((sum, count) => sum + count, 0);
+        // Create simple gradient with exactly the top 3 colors
+        const gradientColors = topColors.map(color => colorMap[color]);
         
-        // Convert to percentages
-        const colorPercentages = {};
-        Object.entries(topColorCounts).forEach(([color, count]) => {
-            colorPercentages[color] = (count / totalSelectedCounts) * 100;
-        });
+        // Create a clean linear gradient with exactly the top 3 colors
+        const gradient = `linear-gradient(to right, ${gradientColors.join(', ')})`;
 
-        // Create gradient stops
-        let currentPosition = 0;
-        const gradientStops = Object.entries(colorPercentages)
-            .map(([color, percentage]) => {
-                const stop = `${colorMap[color]} ${currentPosition}%`;
-                currentPosition += percentage;
-                return stop;
-            });
-
-        // Create the gradient
-        const gradient = `linear-gradient(to right, ${gradientStops.join(', ')})`;
+        console.log("Selected top colors:", topColors);
+        console.log("Generated gradient:", gradient);
 
         // Calculate aura shape based on response times
         const auraShape = calculateAuraShape();
@@ -342,7 +340,7 @@ function AuraQuestionnaire() {
 
         try {
             // Make the API call with the full URL
-            const apiUrl = `http://localhost:5000/api/users/${userId}/aura`;
+            const apiUrl = `http://localhost:5001/api/users/${userId}/aura`;
             console.log("Posting to API URL:", apiUrl);
             
             // Save the aura to the database with better error logging

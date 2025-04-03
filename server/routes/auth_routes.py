@@ -42,5 +42,6 @@ class Login(Resource):
         return {'error': 'Invalid email or password'}, 401
 
 # Register routes
-api.add_resource(SignUp, '/api/auth/signup')
-api.add_resource(Login, '/api/auth/login')
+def register_resources(api):
+    api.add_resource(SignUp, '/api/auth/signup')
+    api.add_resource(Login, '/api/auth/login')

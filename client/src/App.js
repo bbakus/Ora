@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from './styles/theme';
-import BottomNav from './components/navigation/BottomNav';
 import MobileContainer from './components/layout/MobileContainer';
 import { Box } from '@mui/material';
 import LandingScreen from './components/screens/LandingScreen';
@@ -21,30 +20,37 @@ import CollectionsScreen from './components/screens/CollectionsScreen';
 import AboutAurasScreen from './components/screens/AboutAurasScreen';
 
 function App() {
+  console.log("App rendered, available routes:");
 
-
-  
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
-        <div className="app">
-          <Routes>
-            {/* Auth Flow */}
-            <Route path="/" element={<LandingScreen />} />
-            <Route path="/auth" element={<AuthScreen />} />
-            <Route path="/signup" element={<SignupScreen />} />
-            <Route path="/auth/:userId/dashboard" element={<DashboardScreen />} />
-            <Route path="/auth/:userId/questionnaire" element={<AuraQuestionnaire/>} />
-            
-            {/* Main App */}
-            <Route path="/discover" element={<DiscoverScreen />} />
-            <Route path="/discover/:userId" element={<DiscoverScreen />} />
-            <Route path="/collections" element={<CollectionsScreen />} />
-            <Route path="/about-auras" element={<AboutAurasScreen />} />
-          </Routes>
-          <BottomNav />
-        </div>
+        <MobileContainer>
+          <Box sx={{ 
+            width: '100%', 
+            minHeight: '100vh',
+            backgroundColor: '#121212',
+            color: '#f5f5f5',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <Routes>
+              {/* Auth Flow */}
+              <Route path="/" element={<LandingScreen />} />
+              <Route path="/auth" element={<AuthScreen />} />
+              <Route path="/signup" element={<SignupScreen />} />
+              <Route path="/auth/:userId/dashboard" element={<DashboardScreen />} />
+              <Route path="/auth/:userId/questionnaire" element={<AuraQuestionnaire/>} />
+              
+              {/* Main App */}
+              <Route path="/discover" element={<DiscoverScreen />} />
+              <Route path="/discover/:userId" element={<DiscoverScreen />} />
+              <Route path="/collections" element={<CollectionsScreen />} />
+              <Route path="/about-auras" element={<AboutAurasScreen />} />
+            </Routes>
+          </Box>
+        </MobileContainer>
       </Router>
     </ThemeProvider>
   );

@@ -2,6 +2,7 @@ import { createTheme } from '@mui/material/styles';
 
 const theme = createTheme({
   palette: {
+    mode: 'dark',
     primary: {
       main: '#6200EE',
       light: '#7C4DFF',
@@ -13,46 +14,57 @@ const theme = createTheme({
       dark: '#018786',
     },
     background: {
-      default: '#F5F5F5',
-      paper: '#FFFFFF',
+      default: '#121212',
+      paper: '#1e1e1e',
     },
   },
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     h1: {
-      fontSize: '2rem',
-      fontWeight: 500,
+      fontSize: '66px',
+      fontWeight: 700,
     },
     h2: {
-      fontSize: '1.5rem',
+      fontSize: '57px',
       fontWeight: 500,
     },
     h3: {
-      fontSize: '1.25rem',
+      fontSize: '47px',
       fontWeight: 500,
     },
     body1: {
-      fontSize: '1rem',
+      fontSize: '16px',
     },
     body2: {
-      fontSize: '0.875rem',
+      fontSize: '14px',
     },
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          backgroundColor: '#121212',
+          color: '#f5f5f5',
+        },
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {
           textTransform: 'none',
-          borderRadius: 8,
-          padding: '8px 16px',
+          borderRadius: 28,
+          padding: '16px 24px',
+          fontSize: '47px',
+          fontWeight: 600,
         },
       },
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: 12,
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          borderRadius: 16,
+          backgroundColor: '#1e1e1e',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
         },
       },
     },

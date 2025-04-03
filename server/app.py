@@ -9,8 +9,8 @@ from server.models.location import Location
 from server.models.collection import Collection
 from server.models.review import Review
 
-def create_app(config_class=Config):
-    app = Flask(__name__)
+def create_app(config_class=Config, instance_path=None):
+    app = Flask(__name__, instance_path=instance_path)
     app.config.from_object(config_class)
 
     # Initialize extensions
@@ -22,9 +22,27 @@ def create_app(config_class=Config):
     with app.app_context():
         from server.routes import auth_routes, location_routes, review_routes, collection_routes, discover_routes, user_routes
         api.init_app(app)
+        
+        # Register all routes directly
+        api.add_resource(location_routes.LocationList, '/api/locations')
+        api.add_resource(location_routes.LocationById, '/api/locations/<int:location_id>')
+        api.add_resource(location_routes.LocationAura, '/api/locations/<int:location_id>/aura')
+        api.add_resource(location_routes.FetchNearbyLocations, '/api/fetch-nearby-locations')
+        api.add_resource(auth_routes.SignUp, '/api/auth/signup')
+        api.add_resource(auth_routes.Login, '/api/auth/login')
+        api.add_resource(user_routes.UserAura, '/api/users/<user_id>/aura')
+        api.add_resource(user_routes.UserData, '/api/users/<user_id>')
     
     @app.route('/')
     def index():
         return {'message': 'Welcome to Ora API'}, 200
 
+    @app.route('/api/test')
+    def test():
+        return {'status': 'ok', 'message': 'API is working'}, 200
+
     return app
+
+if __name__ == '__main__':
+    app = create_app()
+    app.run(debug=True, port=5001)

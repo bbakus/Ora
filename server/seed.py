@@ -4,13 +4,18 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Add the project root directory to Python path
-project_root = str(Path(__file__).parent.parent)
+project_root = str(Path(__file__).parent.parent.absolute())
 sys.path.append(project_root)
+
+# Set the instance path explicitly
+instance_path = os.path.join(project_root, 'instance')
+if not os.path.exists(instance_path):
+    os.makedirs(instance_path)
 
 # Load environment variables
 load_dotenv()
 
-from app import create_app
+from server.app import create_app
 from server.extensions import db
 from server.models.location import Location
 from server.models.tag import Tag
@@ -34,8 +39,8 @@ import certifi
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
-# Create the app instance
-app = create_app()
+# Create the app instance with explicit instance path
+app = create_app(instance_path=instance_path)
 app.app_context().push()  # Push an application context
 
 # Download required NLTK data
@@ -51,11 +56,11 @@ if not GOOGLE_MAPS_API_KEY:
 gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
 
 # Test mode settings
-TEST_MODE = True  # Set to False for full data import
-MAX_LOCATIONS_PER_TYPE = 3  # Maximum locations to import per place type per area
-MAX_REVIEWS_PER_LOCATION = 5  # Maximum reviews to import per location
+TEST_MODE = False  # Set to False for full data import
+MAX_LOCATIONS_PER_TYPE = 50  # Increase from 15 to 50 locations per type per area
+MAX_REVIEWS_PER_LOCATION = 10  # Maximum reviews to import per location
 
-# NYC boroughs and their centers
+# NYC boroughs and their centers - Add more neighborhoods
 NYC_AREAS = [
     {
         'name': 'Manhattan',
@@ -71,16 +76,69 @@ NYC_AREAS = [
         'name': 'Queens',
         'center': (40.7282, -73.7949),
         'radius': 5000
+    },
+    # Add more specific neighborhoods for variety
+    {
+        'name': 'East Village',
+        'center': (40.7265, -73.9815),
+        'radius': 1500
+    },
+    {
+        'name': 'West Village',
+        'center': (40.7347, -74.0067),
+        'radius': 1500
+    },
+    {
+        'name': 'Upper East Side',
+        'center': (40.7736, -73.9566),
+        'radius': 2000
+    },
+    {
+        'name': 'Williamsburg',
+        'center': (40.7081, -73.9571),
+        'radius': 2000
+    },
+    {
+        'name': 'DUMBO',
+        'center': (40.7033, -73.9894),
+        'radius': 1000
+    },
+    # Add Jersey City and Hoboken
+    {
+        'name': 'Jersey City',
+        'center': (40.7282, -74.0776),
+        'radius': 5000
+    },
+    {
+        'name': 'Hoboken',
+        'center': (40.7440, -74.0324),
+        'radius': 2000
+    },
+    {
+        'name': 'Newport',  # Jersey City neighborhood
+        'center': (40.7288, -74.0341),
+        'radius': 1500
+    },
+    {
+        'name': 'Journal Square',  # Jersey City neighborhood
+        'center': (40.7327, -74.0637),
+        'radius': 2000
     }
 ]
 
-# Place types to search for
+# Place types to search for - Add more types
 PLACE_TYPES = [
     'restaurant',
-    'cafe',  # This will cover both cafes and coffee shops
+    'cafe',  
     'bar',
     'park',
-    'night_club'
+    'night_club',
+    'museum',    # Added
+    'art_gallery', # Added
+    'movie_theater', # Added
+    'book_store',  # Added
+    'bakery',      # Added
+    'shopping_mall' # Added
 ]
 
 # Keywords that influence aura properties
@@ -284,13 +342,13 @@ def create_test_collection(user):
     return collection
 
 def get_place_details(place_id):
-    """Get detailed information about a place"""
+    """Get detailed information about a place from Google Maps API"""
     try:
-        details = gmaps.place(place_id, fields=['name', 'formatted_address', 'rating', 'reviews'])
-        return details['result']
+        place_details = gmaps.place(place_id=place_id, fields=['name', 'formatted_address', 'rating', 'review', 'type'])
+        return place_details.get('result', {})
     except Exception as e:
-        print(f"Error getting details for place {place_id}: {e}")
-        return None
+        print(f"Error getting place details for {place_id}: {e}")
+        return {}
 
 def create_aura(reviews):
     """Create an aura based on review analysis"""
@@ -315,94 +373,219 @@ def create_aura(reviews):
     )
 
 def seed_database():
-    """Main seeding function"""
-    with app.app_context():
-        # Create test user and collection
-        user = create_test_user()
-        collection = create_test_collection(user)
+    """Seed the database with locations from Google Places API"""
+    # Clear existing data
+    print("Clearing existing data...")
+    Location.query.delete()
+    Tag.query.delete()
+    Review.query.delete()
+    db.session.commit()
+    
+    print("Starting database seeding...")
+    locations_added = 0
+    api_errors = 0
+    
+    # Create test user
+    user = create_test_user()
+    collection = create_test_collection(user)
+    
+    # Loop through each area and place type
+    for area in NYC_AREAS:
+        area_name = area['name']
+        location = area['center']
+        radius = area['radius']
         
-        # Clear existing data if in test mode
-        if TEST_MODE:
-            print("Clearing existing data...")
-            db.session.query(Location).delete()
-            db.session.query(Tag).delete()
-            db.session.query(Review).delete()
-            db.session.commit()
-
-        # Search for places in each NYC area
-        for area in NYC_AREAS:
-            print(f"Searching in {area['name']}...")
+        print(f"\nProcessing area: {area_name}")
+        
+        for place_type in PLACE_TYPES:
+            print(f"  Searching for {place_type}s in {area_name}...")
             
-            for place_type in PLACE_TYPES:
-                try:
-                    # Search for places
-                    places_result = gmaps.places_nearby(
-                        location=area['center'],
-                        radius=area['radius'],
-                        type=place_type
-                    )
-
-                    if 'results' in places_result:
-                        # Limit the number of results if in test mode
-                        places = places_result['results'][:MAX_LOCATIONS_PER_TYPE] if TEST_MODE else places_result['results']
+            try:
+                # Search for places of this type in this area
+                places_result = gmaps.places_nearby(
+                    location=location,
+                    radius=radius,
+                    type=place_type,
+                    rank_by='prominence'  # Get the most popular places first
+                )
+                
+                # Get search results
+                places = places_result.get('results', [])
+                print(f"    Found {len(places)} {place_type}s")
+                
+                # Process up to MAX_LOCATIONS_PER_TYPE places
+                count = 0
+                for place in places:
+                    if count >= MAX_LOCATIONS_PER_TYPE:
+                        break
+                    
+                    try:
+                        place_id = place.get('place_id')
+                        name = place.get('name')
                         
-                        for place in places:
-                            # Check if location already exists
-                            existing_location = Location.query.filter_by(google_place_id=place['place_id']).first()
-                            if existing_location:
-                                print(f"Skipping existing location: {place['name']}")
-                                continue
-
-                            # Get detailed information
-                            details = get_place_details(place['place_id'])
-                            if not details:
-                                continue
-
-                            # Create location
-                            location = Location(
-                                name=place['name'],
-                                google_place_id=place['place_id'],
-                                latitude=place['geometry']['location']['lat'],
-                                longitude=place['geometry']['location']['lng'],
-                                place_type=place_type,
-                                address=details.get('formatted_address', ''),
-                                rating=details.get('rating', 0.0)
-                            )
-                            db.session.add(location)
-                            db.session.flush()  # Get location ID
-
-                            # Create reviews if available
-                            reviews = details.get('reviews', [])
-                            # Limit the number of reviews if in test mode
-                            reviews = reviews[:MAX_REVIEWS_PER_LOCATION] if TEST_MODE else reviews
+                        if not place_id or not name:
+                            continue
                             
-                            for review_data in reviews:
+                        print(f"    Processing place: {name} ({place_id})")
+                        
+                        # Check if location already exists
+                        existing = Location.query.filter_by(google_place_id=place_id).first()
+                        if existing:
+                            print(f"    Skipping {name} - already exists")
+                            continue
+                            
+                        # Get place details
+                        details = get_place_details(place_id)
+                        
+                        if not details:
+                            print(f"    No details available for {name}")
+                            continue
+                        
+                        # Create location
+                        location_obj = Location(
+                            name=name,
+                            google_place_id=place_id,
+                            latitude=place['geometry']['location']['lat'],
+                            longitude=place['geometry']['location']['lng'],
+                            place_type=place_type,
+                            address=details.get('formatted_address', place.get('vicinity', '')),
+                            rating=place.get('rating')
+                        )
+                        
+                        db.session.add(location_obj)
+                        db.session.flush()  # Get ID before creating reviews
+                        
+                        # Get reviews for analysis
+                        reviews_data = details.get('reviews', [])
+                        review_texts = []
+                        
+                        for i, review_data in enumerate(reviews_data):
+                            if i >= MAX_REVIEWS_PER_LOCATION:
+                                break
+                                
+                            review_text = review_data.get('text', '')
+                            if review_text:
+                                review_texts.append(review_text)
+                                
+                                # Create review object
                                 review = Review(
-                                    body=review_data.get('text', ''),
+                                    body=review_text,
+                                    rating=review_data.get('rating', 0),
                                     user_id=user.id,
-                                    location_id=location.id
+                                    location_id=location_obj.id
                                 )
                                 db.session.add(review)
-
-                            # Create aura based on reviews
-                            aura = create_aura(reviews)
-                            db.session.add(aura)
+                        
+                        # Create aura based on reviews
+                        if review_texts:
+                            aura_scores, vibe_scores = analyze_reviews(review_texts)
+                            
+                            # Determine dominant characteristics for naming
+                            dominant_aura = max(aura_scores.items(), key=lambda x: x[1])[0]
+                            dominant_vibe = max(vibe_scores.items(), key=lambda x: x[1])[0]
+                            
+                            # Convert scores to colors
+                            color_gradient = generate_gradient(aura_scores)
+                            
+                            # Create tag (aura)
+                            tag = Tag(
+                                name=f"{dominant_aura.capitalize()} {dominant_vibe.capitalize()}",
+                                color=f"linear-gradient(to right, {BASE_COLORS[dominant_aura]}, {lighten_color(BASE_COLORS[dominant_aura], 30)})",
+                                shape=dominant_vibe
+                            )
+                            
+                            db.session.add(tag)
                             db.session.flush()
-                            location.tags.append(aura)
+                            
+                            # Associate tag with location
+                            location_obj.tags.append(tag)
+                        
+                        # Add to collection
+                        if random.random() < 0.3:  # 30% chance to add to collection
+                            collection.locations.append(location_obj)
+                        
+                        count += 1
+                        locations_added += 1
+                        
+                        # Commit every 10 locations to avoid long transactions
+                        if locations_added % 10 == 0:
+                            print(f"Committing batch: {locations_added} locations processed")
+                            db.session.commit()
+                        
+                    except Exception as e:
+                        print(f"    Error processing place {name}: {e}")
+                        continue
+                
+                print(f"  Added {count} {place_type}s in {area_name}")
+                
+                # Attempt pagination if API supports it and we need more locations
+                next_page_token = places_result.get('next_page_token')
+                if next_page_token and count < MAX_LOCATIONS_PER_TYPE:
+                    print("  Fetching next page of results...")
+                    import time
+                    time.sleep(2)  # Wait a bit for the next page token to be valid
+                    
+                    try:
+                        places_result = gmaps.places_nearby(
+                            page_token=next_page_token
+                        )
+                        more_places = places_result.get('results', [])
+                        places.extend(more_places)
+                        print(f"    Found {len(more_places)} more {place_type}s")
+                    except Exception as e:
+                        print(f"  Error fetching next page: {e}")
+                
+            except Exception as e:
+                print(f"  Error searching for {place_type}s in {area_name}: {e}")
+                api_errors += 1
+                if api_errors > 5:
+                    print("Too many API errors, stopping")
+                    break
+    
+    # Final commit
+    db.session.commit()
+    print(f"\nSeeding complete! Added {locations_added} locations")
 
-                            # Add to test collection
-                            collection.locations.append(location)
+def lighten_color(hex_color, percent):
+    """Lighten a hex color by a percentage"""
+    # Remove hash if present
+    hex_color = hex_color.lstrip('#')
+    
+    # Convert to RGB
+    r = int(hex_color[0:2], 16)
+    g = int(hex_color[2:4], 16)
+    b = int(hex_color[4:6], 16)
+    
+    # Lighten
+    r = min(255, r + (255 - r) * percent // 100)
+    g = min(255, g + (255 - g) * percent // 100)
+    b = min(255, b + (255 - b) * percent // 100)
+    
+    # Convert back to hex
+    return f"#{r:02x}{g:02x}{b:02x}"
 
-                            print(f"Added {place['name']}")
-
-                except Exception as e:
-                    print(f"Error processing {place_type} in {area['name']}: {e}")
-                    db.session.rollback()  # Rollback on error
-                    continue
-
-        # Commit all changes
-        db.session.commit()
-        print("Seeding completed!")
+# Ensure we're using the right API key
+def check_api_key():
+    """Validate that the API key is working"""
+    if not GOOGLE_MAPS_API_KEY:
+        print("ERROR: No Google Maps API key found. Set the GOOGLE_MAPS_API_KEY environment variable.")
+        return False
+    
+    try:
+        # Simple test query
+        result = gmaps.geocode('New York')
+        if result:
+            print(f"API key validated successfully!")
+            return True
+        else:
+            print("API key validation failed - no results returned")
+            return False
+    except Exception as e:
+        print(f"API key validation error: {e}")
+        return False
 
 if __name__ == '__main__':
-    seed_database() 
+    if check_api_key():
+        seed_database()
+    else:
+        print("Seeding aborted due to API key issues") 
