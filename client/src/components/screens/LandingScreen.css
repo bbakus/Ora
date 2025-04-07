@@ -9,7 +9,7 @@
 }
 
 .ora-title img {
-    width: 700px;
+    width: 1000px;
     height: auto;
     z-index: 100;
 }
@@ -25,11 +25,11 @@
 }
 
 .enter-button {
-    top: 5%;
+    top: 8%;
     color: white;
     border: none;
-    padding: 12px 32px;
-    font-size: 1.2rem;
+    padding: 50px 100px;
+    font-size: 40px;
     border-radius: 25px;
     cursor: pointer;
     position: relative;
