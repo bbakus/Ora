@@ -32,10 +32,9 @@ git clone --mirror "$CURRENT_DIR" "$REPO_NAME.git"
 cd "$REPO_NAME.git"
 
 # Remove sensitive files and replace API keys
-# Replace the pattern below with your actual API key pattern
 # This will replace any occurrence of the API key with "API_KEY_REMOVED"
-echo "AIzaSyApqLTebKHFgwbXJUm_Jf45yelcPMfrXck" > patterns.txt
-echo "AIzaSyB456VfsdMUrWJVV9aLiaVn7bVcwy6EEMc" >> patterns.txt # include new key too in case of accidental commit
+echo "YOUR_OLD_API_KEY_PATTERN_HERE" > patterns.txt 
+echo "YOUR_NEW_API_KEY_PATTERN_HERE" >> patterns.txt # include new key too in case of accidental commit
 
 # Use BFG to clean up
 if command -v bfg > /dev/null; then
