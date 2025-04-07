@@ -81,6 +81,26 @@ To use the Google Maps and Places APIs:
 3. Create API keys with appropriate restrictions
 4. Add the keys to your `.env` file
 
+### API Key Security
+
+**IMPORTANT:** API keys should never be committed to your repository!
+
+- The `.env` files are already included in `.gitignore` to prevent accidental exposure
+- Always use environment variables for sensitive credentials:
+  ```javascript
+  // Client-side example
+  const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
+  ```
+  ```python
+  # Server-side example
+  api_key = os.environ.get('GOOGLE_PLACES_API_KEY', '')
+  ```
+- When setting up a new development environment, copy `.env.example` to `.env` and add your personal API keys
+- Apply restrictions to your Google API keys in the Google Cloud Console:
+  - Restrict by HTTP referrers (for client-side usage)
+  - Restrict by IP address (for server-side usage)
+  - Limit to only the specific APIs needed (Maps JavaScript, Places, etc.)
+
 ## Key Components
 
 - **DiscoverScreen**: Main interface for displaying and interacting with the map

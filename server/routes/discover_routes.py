@@ -39,17 +39,178 @@ NYC_BOUNDS = {
 GOOGLE_PLACES_API_KEY = os.environ.get('GOOGLE_PLACES_API_KEY', '')
 
 # Aura shapes and colors for testing
-AURA_NAMES = ['Vibrant', 'Peaceful', 'Energizing', 'Calming', 'Inspiring', 'Healing', 'Balanced', 'Uplifting']
-AURA_COLORS = ['#FF5733', '#33FF57', '#3357FF', '#FF33A8', '#8C33FF', '#33B5FF', '#D733FF', '#FFC300']
-AURA_SHAPES = ['intense', 'diffuse', 'balanced', 'flowing']
+AURA_NAMES = {
+    'chill': ['Peaceful', 'Calming', 'Serene', 'Tranquil', 'Relaxed'],
+    'energetic': ['Vibrant', 'Dynamic', 'Energetic', 'Lively', 'Electric'],
+    'formal': ['Elegant', 'Sophisticated', 'Refined', 'Polished', 'Classic'],
+    'balanced': ['Balanced', 'Harmonious', 'Uplifting', 'Inspiring', 'Well-rounded']
+}
+
+AURA_SHAPES = ['soft', 'pulse', 'flowing', 'sparkle']  # Based on popularity/review count
+
+# More distinct aura colors for each vibe type
+AURA_COLORS = {
+    'chill': [
+        {'light': '#66B2FF', 'dark': '#0066CC'},  # Blue
+        {'light': '#A3CFEC', 'dark': '#4A89DC'},  # Light blue
+        {'light': '#98D8C8', 'dark': '#45B7AF'},  # Teal blue
+        {'light': '#BFDFFF', 'dark': '#3498DB'}   # Sky blue
+    ],
+    'energetic': [
+        {'light': '#FFFF66', 'dark': '#CCCC00'},  # Yellow
+        {'light': '#FFA726', 'dark': '#E67E22'},  # Orange
+        {'light': '#FF5252', 'dark': '#D32F2F'},  # Red
+        {'light': '#FF8A80', 'dark': '#FF5252'}   # Coral
+    ],
+    'formal': [
+        {'light': '#CC99FF', 'dark': '#6600CC'},  # Purple
+        {'light': '#9575CD', 'dark': '#5E35B1'},  # Deep purple
+        {'light': '#BA68C8', 'dark': '#7B1FA2'},  # Magenta
+        {'light': '#D1C4E9', 'dark': '#7E57C2'}   # Lavender
+    ],
+    'balanced': [
+        {'light': '#99FFFF', 'dark': '#00CCCC'},  # Cyan
+        {'light': '#80CBC4', 'dark': '#009688'},  # Teal
+        {'light': '#AED581', 'dark': '#7CB342'},  # Light green
+        {'light': '#B2DFDB', 'dark': '#26A69A'}   # Seafoam
+    ]
+}
+
+VIBE_TYPES = list(AURA_COLORS.keys())  # ['chill', 'energetic', 'formal', 'balanced']
 
 # Simple function to analyze place type
 def analyze_place_and_create_aura(place_info):
-    # Return random aura for testing
+    # Determine vibe type based on place type or name
+    if isinstance(place_info, str):
+        name = place_info.lower()
+        place_type = ""
+        rating = 0  # Default rating when only name is provided
+    else:
+        place_type = place_info.get('types', [])[0] if isinstance(place_info.get('types', []), list) and place_info.get('types') else ''
+        name = place_info.get('name', '').lower()
+        rating = place_info.get('rating', 0)
+    
+    # Try to match place type to a vibe
+    if place_type in ['restaurant', 'bar', 'night_club']:
+        # More likely to be energetic
+        vibe_weights = {'chill': 0.1, 'energetic': 0.6, 'formal': 0.2, 'balanced': 0.1}
+    elif place_type in ['cafe', 'bakery', 'book_store']:
+        # More likely to be chill
+        vibe_weights = {'chill': 0.6, 'energetic': 0.1, 'formal': 0.1, 'balanced': 0.2}
+    elif place_type in ['art_gallery', 'museum']:
+        # More likely to be formal
+        vibe_weights = {'chill': 0.2, 'energetic': 0.0, 'formal': 0.7, 'balanced': 0.1}
+    elif place_type in ['park', 'shopping_mall']:
+        # More likely to be balanced
+        vibe_weights = {'chill': 0.2, 'energetic': 0.2, 'formal': 0.0, 'balanced': 0.6}
+    else:
+        # Default, evenly distributed
+        vibe_weights = {'chill': 0.25, 'energetic': 0.25, 'formal': 0.25, 'balanced': 0.25}
+    
+    # Adjust based on name keywords
+    if any(keyword in name for keyword in ['lounge', 'quiet', 'relax', 'spa', 'calm']):
+        vibe_weights['chill'] += 0.2
+    if any(keyword in name for keyword in ['party', 'club', 'bar', 'pub', 'tavern']):
+        vibe_weights['energetic'] += 0.2
+    if any(keyword in name for keyword in ['luxury', 'gourmet', 'fine', 'elegant']):
+        vibe_weights['formal'] += 0.2
+    if any(keyword in name for keyword in ['cafe', 'coffee', 'bistro', 'casual']):
+        vibe_weights['balanced'] += 0.2
+    
+    # Normalize weights
+    total = sum(vibe_weights.values())
+    normalized_weights = {k: v/total for k, v in vibe_weights.items()}
+    
+    # Define diverse color pairs for truly contrasting gradients
+    diverse_color_pairs = [
+        ('#FF5252', '#26A69A'),  # Red + Teal
+        ('#FF9800', '#3F51B5'),  # Orange + Indigo
+        ('#FFEB3B', '#673AB7'),  # Yellow + Deep Purple
+        ('#4CAF50', '#9C27B0'),  # Green + Purple
+        ('#009688', '#E91E63'),  # Teal + Pink
+        ('#2196F3', '#FF9800'),  # Blue + Orange
+        ('#3F51B5', '#FFC107'),  # Indigo + Amber
+        ('#9C27B0', '#CDDC39'),  # Purple + Lime
+        ('#795548', '#00BCD4'),  # Brown + Cyan
+        ('#607D8B', '#FFEB3B')   # Blue Grey + Yellow
+    ]
+    
+    # Decide approach: 50% diverse color pairs, 25% cross-category, 25% traditional
+    approach = random.random()
+    
+    if approach < 0.5:
+        # Use a diverse color pair for truly contrasting gradients
+        color_pair = random.choice(diverse_color_pairs)
+        start_color, end_color = color_pair
+        vibe_type = max(normalized_weights.items(), key=lambda x: x[1])[0]
+    elif approach < 0.75:
+        # Cross-category mixing (similar to original code)
+        vibe_options = list(normalized_weights.keys())
+        weights = [normalized_weights[vibe] for vibe in vibe_options]
+        
+        # Select primary vibe type
+        primary_vibe = random.choices(vibe_options, weights=weights, k=1)[0]
+        
+        # For secondary vibe, adjust weights to discourage the same category
+        sec_weights = weights.copy()
+        primary_index = vibe_options.index(primary_vibe)
+        sec_weights[primary_index] *= 0.3  # Reduce chance of selecting the same category
+        
+        # Renormalize secondary weights
+        total_sec = sum(sec_weights)
+        sec_weights = [w/total_sec for w in sec_weights]
+        
+        # Select secondary vibe type
+        secondary_vibe = random.choices(vibe_options, weights=sec_weights, k=1)[0]
+        
+        # Get a color from each vibe's palette
+        primary_color_set = random.choice(AURA_COLORS[primary_vibe])
+        secondary_color_set = random.choice(AURA_COLORS[secondary_vibe])
+        
+        # Mix the colors from different categories (use dark from one, light from another)
+        if random.random() < 0.5:
+            start_color = primary_color_set['dark']
+            end_color = secondary_color_set['light']
+        else:
+            start_color = secondary_color_set['dark']
+            end_color = primary_color_set['light']
+            
+        # For naming, use the primary vibe
+        vibe_type = primary_vibe
+    else:
+        # Traditional single-category approach
+        vibe_options = list(normalized_weights.keys())
+        vibe_type = random.choices(
+            vibe_options, 
+            weights=[normalized_weights[vibe] for vibe in vibe_options],
+            k=1
+        )[0]
+            
+        # Get the colors for this vibe
+        color_set = random.choice(AURA_COLORS[vibe_type])
+        start_color = color_set['dark']
+        end_color = color_set['light']
+    
+    # Create a gradient with distinct colors
+    gradient = f"linear-gradient(45deg, {start_color}, {end_color})"
+    
+    # Determine shape based on rating
+    if rating <= 2.0:
+        shape = "soft"      # 2 stars and below
+    elif rating <= 3.0:
+        shape = "pulse"     # 3 stars
+    elif rating <= 4.0:
+        shape = "flowing"   # 4 stars
+    else:
+        shape = "sparkle"   # 5 stars
+    
+    # Select a name based on the vibe type
+    name = random.choice(AURA_NAMES[vibe_type]) + ' ' + vibe_type.capitalize()
+    
     return {
-        'name': random.choice(AURA_NAMES) + ' ' + random.choice(AURA_SHAPES).capitalize(),
-        'color': 'linear-gradient(to right, ' + random.choice(AURA_COLORS) + ', ' + random.choice(AURA_COLORS) + ')',
-        'shape': random.choice(AURA_SHAPES)
+        'name': name,
+        'color': gradient,
+        'shape': shape
     }
 
 class DiscoverLocations(Resource):
@@ -107,7 +268,11 @@ class DiscoverLocations(Resource):
                     }
                 else:
                     # If no aura exists, create one based on available data
-                    aura_data = analyze_place_and_create_aura(location.name)
+                    aura_data = analyze_place_and_create_aura({
+                        'name': location.name,
+                        'types': [location.place_type] if location.place_type else [],
+                        'rating': location.rating or 0
+                    })
                     
                     # Create a new Tag object
                     aura_tag = Tag(

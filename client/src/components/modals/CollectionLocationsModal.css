@@ -1,0 +1,304 @@
+.collection-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
+  backdrop-filter: blur(5px);
+  animation: fadeIn 0.3s ease-out;
+  cursor: pointer;
+}
+
+.collection-locations-modal {
+  background-color: #1a2635;
+  border-radius: 40px;
+  width: 95%;
+  max-width: 1200px;
+  height: 40vh;
+  max-height: 40vh;
+  overflow: hidden;
+  box-shadow: 0 24px 96px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  animation: slideUp 0.4s ease-out;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  cursor: default;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40px 60px 20px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: white;
+  font-size: 5.2rem;
+  font-weight: 600;
+  flex: 1;
+}
+
+.header-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.edit-button {
+  background: linear-gradient(to right, #00b7c2, #4ecdc4);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 25px 50px;
+  font-size: 3.6rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 8px rgba(0, 183, 194, 0.3);
+}
+
+.edit-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 183, 194, 0.4);
+}
+
+.edit-action-button {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 15px 30px;
+  font-size: 2.6rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.edit-action-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.edit-action-button.delete {
+  background-color: rgba(255, 82, 82, 0.2);
+  color: #ff5252;
+}
+
+.edit-action-button.delete:hover {
+  background-color: rgba(255, 82, 82, 0.3);
+}
+
+.name-edit-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.collection-name-input {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 16px 24px;
+  font-size: 3.2rem;
+  color: white;
+  width: 100%;
+  max-width: 600px;
+}
+
+.collection-name-input:focus {
+  outline: none;
+  border-color: rgba(0, 183, 194, 0.5);
+}
+
+.save-name-button {
+  background: linear-gradient(to right, #00b7c2, #4ecdc4);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 24px;
+  font-size: 1.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-name-button:hover {
+  transform: translateY(-2px);
+}
+
+.locations-list {
+  overflow-y: auto;
+  padding: 10px 40px 20px;
+  flex: 1;
+}
+
+.location-item {
+  display: flex;
+  padding: 24px 40px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+  background-color: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: all 0.2s;
+  align-items: center;
+  position: relative;
+}
+
+.location-item:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.location-item.edit-mode {
+  padding-left: 140px;
+}
+
+.delete-button {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 120px;
+  background-color: rgba(255, 59, 59, 0.9);
+  border-radius: 20px 0 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 36px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.location-info {
+  flex: 1;
+}
+
+.location-info h3 {
+  margin: 0;
+  color: white;
+  font-size: 2.8rem;
+  font-weight: 500;
+}
+
+.location-aura {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  margin-left: 20px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.empty-locations {
+  padding: 80px;
+  text-align: center;
+  color: #aaa;
+  font-size: 2.8rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  margin-top: 40px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 900px) {
+  .collection-locations-modal {
+    width: 100%;
+    height: 70vh;
+    max-height: 70vh;
+    border-radius: 30px 30px 0 0;
+    margin-top: auto;
+    margin-bottom: 0;
+  }
+  
+  .modal-header {
+    padding: 50px 30px 30px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .modal-header h2 {
+    font-size: 3.8rem;
+    margin-bottom: 20px;
+  }
+  
+  .header-actions {
+    align-self: flex-end;
+    margin-top: 10px;
+  }
+  
+  .locations-list {
+    padding: 20px 20px 40px;
+  }
+  
+  .location-item {
+    padding: 20px;
+  }
+  
+  .location-info h3 {
+    font-size: 2.2rem;
+  }
+  
+  .location-aura {
+    width: 80px;
+    height: 80px;
+  }
+}
+
+.delete-collection-container {
+  padding: 20px;
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  border-top: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.delete-collection-button {
+  background-color: rgba(255, 59, 59, 0.9);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 20px 40px;
+  font-size: 2.6rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(255, 59, 59, 0.3);
+}
+
+.delete-collection-button:hover {
+  background-color: rgba(255, 59, 59, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 59, 59, 0.4);
+} 

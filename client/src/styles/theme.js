@@ -1,5 +1,6 @@
 import { createTheme } from '@mui/material/styles';
 
+
 const theme = createTheme({
   palette: {
     mode: 'dark',
@@ -19,12 +20,14 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'Sansation_Regular, sans-serif',
     h1: {
+      fontFamily: 'Sansation_Regular, sans-serif',
       fontSize: '66px',
       fontWeight: 700,
     },
     h2: {
+      fontFamily: 'Sansation_Regular, sans-serif',
       fontSize: '57px',
       fontWeight: 500,
     },

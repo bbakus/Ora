@@ -1,0 +1,1413 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { GoogleMap, useJsApiLoader, OverlayView, Marker } from '@react-google-maps/api';
+import AuraLocationMarker from '../markers/AuraLocationMarker';
+import LocationModal from '../modals/LocationModal';
+import AddToCollectionModal from '../modals/AddToCollectionModal';
+import AuraVisualization from '../AuraVisualization';
+import './DiscoverScreen.css';
+
+// NYC coordinates as default center
+const DEFAULT_CENTER = {
+  lat: 40.7128,
+  lng: -74.0060
+};
+
+// Map styling for dark mode
+const darkMapStyle = [
+  { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+  {
+    featureType: "administrative.locality",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#d59563" }],
+  },
+  {
+    featureType: "poi",
+    stylers: [{ visibility: "off" }],  // Hide all POIs
+  },
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ color: "#38414e" }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#212a37" }],
+  },
+  {
+    featureType: "road",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#9ca5b3" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry",
+    stylers: [{ color: "#746855" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#1f2835" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#f3d19c" }],
+  },
+  {
+    featureType: "transit",
+    elementType: "geometry",
+    stylers: [{ color: "#2f3948" }],
+  },
+  {
+    featureType: "transit.station",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#d59563" }],
+  },
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#17263c" }],
+  },
+  {
+    featureType: "water",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#515c6d" }],
+  },
+  {
+    featureType: "water",
+    elementType: "labels.text.stroke",
+    stylers: [{ color: "#17263c" }],
+  },
+];
+
+const libraries = ['places'];
+
+const mapContainerStyle = {
+  width: '100%',
+  height: '100vh',
+  backgroundColor: '#242f3e', // Match the dark map style background
+  // Add hardware acceleration for smoother rendering
+  transform: 'translateZ(0)',
+  backfaceVisibility: 'hidden',
+  // Force GPU acceleration
+  WebkitTransform: 'translate3d(0,0,0)',
+  WebkitBackfaceVisibility: 'hidden'
+};
+
+const options = {
+  styles: darkMapStyle,
+  disableDefaultUI: true,
+  zoomControl: true,
+  clickableIcons: false,
+  fullscreenControl: false,
+  gestureHandling: 'greedy',
+  noClear: true,
+  clickableMarkers: true
+};
+
+// Helper function to create a cluster icon
+function createClusterIcon(count) {
+  const svg = `
+    <svg width="50" height="50" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="25" cy="25" r="22" fill="rgba(0,0,0,0.6)" />
+      <circle cx="25" cy="25" r="20" fill="rgba(255,255,255,0.9)" stroke="#000" stroke-width="1" />
+      <text x="25" y="30" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#000">
+        ${count > 9 ? '9+' : count}
+      </text>
+    </svg>
+  `;
+  return 'data:image/svg+xml;base64,' + window.btoa(svg);
+}
+
+// Add CollectionToast component
+const CollectionToast = ({ message, isVisible, onClose }) => {
+  // Auto-hide after 3 seconds
+  useEffect(() => {
+    if (isVisible) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, onClose]);
+
+  return isVisible ? (
+    <div className="collection-toast">
+      <span>{message}</span>
+      <button onClick={onClose} className="toast-close-btn">×</button>
+    </div>
+  ) : null;
+};
+
+function DiscoverScreen() {
+  const { userId } = useParams();
+  const navigate = useNavigate();
+  const { state } = useLocation();
+  const mapRef = useRef(null);
+  
+  // Get dashboard functions from global namespace since they can't be passed through router state
+  const dashboard = window.oraApp?.dashboard || {};
+  const addRecentLocation = dashboard.addRecentLocation;
+  const createCollection = dashboard.createCollection;
+  const addLocationToCollection = dashboard.addLocationToCollection;
+  
+  const [currentLocation, setCurrentLocation] = useState(DEFAULT_CENTER);
+  // Add a mapCenter ref to control when we actually want to update the map's center
+  const mapCenterRef = useRef(DEFAULT_CENTER);
+  // Add a state to track if we're still in initial loading
+  const [initialMapLoad, setInitialMapLoad] = useState(true);
+  const [locations, setLocations] = useState([]);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [currentZoom, setCurrentZoom] = useState(16.5);
+  const [currentBounds, setCurrentBounds] = useState(null);
+  const [activeFilter, setActiveFilter] = useState(null);
+  const filterScrollRef = useRef(null);
+  const [overlappedArea, setOverlappedArea] = useState(null);
+  const mapInstanceRef = useRef(null);
+  const [debouncedBounds, setDebouncedBounds] = useState(null);
+  const [isAddToCollectionModalOpen, setIsAddToCollectionModalOpen] = useState(false);
+  const [collections, setCollections] = useState([]);
+  const [locationLoading, setLocationLoading] = useState(true);
+  const [userData, setUserData] = useState(null);
+  
+  // Add state for toast notification
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  // Add state for highlighted location (after modal closes)
+  const [highlightedLocationId, setHighlightedLocationId] = useState(null);
+
+  // Define common place types for filtering
+  const placeTypes = [
+    { id: 'restaurant', label: 'Restaurants', icon: 'restaurant_menu' },
+    { id: 'cafe', label: 'Cafes', icon: 'local_cafe' },
+    { id: 'bar', label: 'Bars', icon: 'local_bar' },
+    { id: 'park', label: 'Parks', icon: 'park' },
+    { id: 'store', label: 'Stores', icon: 'store' },
+    { id: 'museum', label: 'Museums', icon: 'museum' },
+    { id: 'hotel', label: 'Hotels', icon: 'hotel' },
+    { id: 'gym', label: 'Gyms', icon: 'fitness_center' },
+    { id: 'theater', label: 'Theaters', icon: 'theaters' },
+    { id: 'bakery', label: 'Bakeries', icon: 'bakery_dining' },
+    { id: 'grocery', label: 'Grocery', icon: 'local_grocery_store' },
+    { id: 'nightclub', label: 'Nightclubs', icon: 'nightlife' }
+  ];
+
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+    id: 'google-map-script',
+    libraries
+  });
+
+  // Get collections from localStorage
+  useEffect(() => {
+    if (userId) {
+      try {
+        // Fetch collections from the API
+        fetch(`http://localhost:5001/api/users/${userId}/collections`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Failed to fetch collections');
+            }
+            return response.json();
+          })
+          .then(collections => {
+            console.log("Initial collections load:", collections);
+            
+            // Fetch locations for each collection to get their auras
+            const collectionsWithLocationPromises = collections.map(collection => 
+                fetch(`http://localhost:5001/api/users/${userId}/collections/${collection.id}`)
+                    .then(response => response.ok ? response.json() : collection)
+                    .catch(error => {
+                        console.error(`Error fetching locations for collection ${collection.id}:`, error);
+                        return collection;
+                    })
+            );
+            
+            // Wait for all collections to be fetched with their locations
+            return Promise.all(collectionsWithLocationPromises);
+          })
+          .then(collectionsWithLocations => {
+            console.log("Collections with locations:", collectionsWithLocations);
+            setCollections(collectionsWithLocations || []);
+          })
+          .catch(error => {
+            console.error('Error fetching collections:', error);
+            
+            // Try fallback to localStorage
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              const userData = JSON.parse(storedUser);
+              console.log("Falling back to localStorage collections:", userData.collections);
+              setCollections(userData.collections || []);
+            }
+          });
+      } catch (error) {
+        console.error('Error getting collections:', error);
+        setCollections([]);
+      }
+    }
+  }, [userId]);
+
+  // Get user's current location
+  useEffect(() => {
+    const getUserLocation = () => {
+      setLocationLoading(true);
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const userLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            console.log("GOT USER LOCATION:", userLocation);
+            setCurrentLocation(userLocation);
+            setLocationLoading(false);
+            
+            // Only set the map center on initial load
+            if (!mapLoaded) {
+              console.log("Setting initial map center");
+              mapCenterRef.current = userLocation;
+            }
+            
+            // Never auto-pan the map to the user location after initial load
+            // This would interrupt the user's browsing experience
+          },
+          (error) => {
+            console.error("Error getting user location:", error);
+            setLocationLoading(false);
+            // Keep default location if there's an error
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+        );
+      } else {
+        console.log("Geolocation not supported by this browser");
+        setLocationLoading(false);
+      }
+    };
+
+    getUserLocation();
+    
+    // Set up a location tracking timer that refreshes position every 30 seconds
+    // but NEVER forces the map to move
+    const locationTracker = setInterval(() => {
+      console.log("Refreshing user location in background (map will not move)...");
+      getUserLocation();
+    }, 30000);
+    
+    // Clean up the interval when component unmounts
+    return () => clearInterval(locationTracker);
+  }, [mapLoaded]);
+
+  // Add a tracking effect for currentLocation
+  useEffect(() => {
+    console.log("CURRENT LOCATION CHANGED:", currentLocation);
+  }, [currentLocation]);
+
+  // Use the location data passed from the router
+  useEffect(() => {
+    if (state && state.selectedLocation) {
+      console.log("Location passed from navigation:", state.selectedLocation);
+      setSelectedLocation(state.selectedLocation);
+      
+      // Add to recent locations if the function is available
+      if (addRecentLocation && typeof addRecentLocation === 'function') {
+        addRecentLocation(state.selectedLocation);
+      }
+    }
+  }, [state, addRecentLocation]);
+
+  // Function to scroll the filter bar
+  const scrollFilters = (direction) => {
+    if (!filterScrollRef.current) return;
+    
+    // Calculate scroll amount based on filter item width (approximately 100px per item)
+    const scrollAmount = 600; // Scroll 6 items at a time (6 * 100px)
+    const currentScroll = filterScrollRef.current.scrollLeft;
+    
+    // Only handle scrolling right since we removed the left button
+    if (direction === 'right') {
+      filterScrollRef.current.scrollTo({
+        left: currentScroll + scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  // Handle filter clicks
+  const handleFilterClick = (filterId) => {
+    setActiveFilter(filterId);
+    // Reset overlapped area when changing filters
+    setOverlappedArea(null);
+  };
+
+  // Handle map click - deselect active markers
+  const handleMapClick = () => {
+    setOverlappedArea(null);
+  };
+
+  // Fetch locations from the backend
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:5001/api/locations');
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch locations: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Fetched locations sample:', data.slice(0, 3));
+        
+        // Filter out any locations without valid coordinates
+        const validLocations = data.filter(loc => 
+          loc && loc.latitude && loc.longitude && 
+          !isNaN(loc.latitude) && !isNaN(loc.longitude)
+        );
+        
+        if (validLocations.length !== data.length) {
+          console.warn(`Filtered out ${data.length - validLocations.length} locations with invalid coordinates`);
+        }
+        
+        // Add additional properties to each location for rendering and interaction
+        const enhancedLocations = validLocations.map(loc => {
+          // Calculate a score based on rating and user_ratings_total
+          const rating = loc.rating || 0;
+          const userRatingsTotal = loc.user_ratings_total || 0;
+          
+          // This formula prioritizes high ratings with many reviews
+          const ratingScore = (rating * 0.6) + (Math.min(userRatingsTotal, 500) / 500 * 0.4);
+          
+          // Add importance score based on multiple factors
+          let importanceScore = ratingScore;
+          
+          // Boost newly added or featured locations
+          if (loc.featured) importanceScore += 0.3;
+          if (loc.newly_added) importanceScore += 0.2;
+          
+          // Adjust score based on place type - make each business type similarly visible
+          const placeType = (loc.place_type || '').toLowerCase();
+          
+          // Assign scores more evenly for demo visualization
+          if (placeType.includes('restaurant')) importanceScore += 0.05;
+          if (placeType.includes('cafe')) importanceScore += 0.12;
+          if (placeType.includes('bar')) importanceScore += 0.1;
+          if (placeType.includes('park')) importanceScore += 0.18;
+          if (placeType.includes('museum')) importanceScore += 0.15;
+          if (placeType.includes('store')) importanceScore += 0.08;
+          if (placeType.includes('hotel')) importanceScore += 0.13;
+          if (placeType.includes('gym')) importanceScore += 0.14;
+          if (placeType.includes('theater')) importanceScore += 0.16;
+          if (placeType.includes('bakery')) importanceScore += 0.11;
+          if (placeType.includes('nightclub')) importanceScore += 0.09;
+          
+          // Extract or generate aura colors if not already present
+          let color1, color2;
+          
+          // Use aura_color1 and aura_color2 if present
+          if (loc.aura_color1 && loc.aura_color2) {
+            color1 = loc.aura_color1;
+            color2 = loc.aura_color2;
+          }
+          
+          if (!color1 || !color2) {
+            // Use aura colors if present in aura object
+            if (loc.aura && loc.aura.color1 && loc.aura.color2) {
+              color1 = loc.aura.color1;
+              color2 = loc.aura.color2;
+            } 
+            // Try to extract from aura.color or aura_color
+            else if ((loc.aura && loc.aura.color) || loc.aura_color) {
+              const colorStr = (loc.aura && loc.aura.color) || loc.aura_color;
+              const colorMatch = colorStr && colorStr.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
+              
+              if (colorMatch && colorMatch.length >= 2) {
+                color1 = colorMatch[0];
+                color2 = colorMatch[1];
+              } else if (colorMatch && colorMatch.length === 1) {
+                color1 = colorMatch[0];
+                color2 = colorMatch[0];
+              }
+            }
+          }
+          
+          // Generate colors if not found
+          if (!color1 || !color2) {
+            // Generate colors based on place type
+            if (placeType.includes('restaurant')) {
+              color1 = '#FF5252';
+              color2 = '#FF8A80';
+            } else if (placeType.includes('cafe')) {
+              color1 = '#795548';
+              color2 = '#A1887F';
+            } else if (placeType.includes('bar')) {
+              color1 = '#9C27B0';
+              color2 = '#CE93D8';
+            } else if (placeType.includes('park')) {
+              color1 = '#4CAF50';
+              color2 = '#81C784';
+            } else if (placeType.includes('museum')) {
+              color1 = '#3F51B5';
+              color2 = '#7986CB';
+            } else if (placeType.includes('store')) {
+              color1 = '#00BCD4';
+              color2 = '#80DEEA';
+            } else if (placeType.includes('hotel')) {
+              color1 = '#FF9800';
+              color2 = '#FFB74D';
+            } else if (placeType.includes('gym')) {
+              color1 = '#F44336';
+              color2 = '#E57373';
+            } else if (placeType.includes('theater')) {
+              color1 = '#9E9E9E';
+              color2 = '#E0E0E0';
+            } else if (placeType.includes('bakery')) {
+              color1 = '#FF9800';
+              color2 = '#FFCC80';
+            } else if (placeType.includes('grocery')) {
+              color1 = '#8BC34A';
+              color2 = '#AED581';
+            } else if (placeType.includes('nightclub')) {
+              color1 = '#7B1FA2';
+              color2 = '#BA68C8';
+            } else {
+              // Default colors for unknown types
+              color1 = '#2196F3';
+              color2 = '#90CAF9';
+            }
+          }
+          
+          return {
+            ...loc,
+            importanceScore,
+            aura_color1: color1,
+            aura_color2: color2,
+            // Set default aura shape based on place type or use existing
+            aura_shape: loc.aura_shape || loc.aura?.shape || 'balanced',
+            // Create aura name if not present
+            aura_name: loc.aura_name || loc.aura?.name || 'balanced-neutral-calm'
+          };
+        });
+        
+        // Sort locations by importance score, descending
+        enhancedLocations.sort((a, b) => b.importanceScore - a.importanceScore);
+        
+        setLocations(enhancedLocations);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+        setError(error.message);
+        setLoading(false);
+      }
+    };
+
+    fetchLocations();
+  }, []);
+
+  // Handle bounds change with debouncing
+  const updateBounds = useCallback(() => {
+    if (mapRef.current && mapRef.current.getBounds()) {
+      setCurrentBounds(mapRef.current.getBounds());
+    }
+  }, []);
+  
+  // Debounced map interaction handler to prevent rendering issues during drag
+  const handleMapInteraction = useCallback(() => {
+    setOverlappedArea(null);
+    
+    // Clear any existing timeouts
+    if (window.boundsTimeout) {
+      clearTimeout(window.boundsTimeout);
+    }
+    
+    // Debounce bounds update to prevent excessive re-rendering during drag
+    window.boundsTimeout = setTimeout(() => {
+      updateBounds();
+    }, 100); // 100ms debounce delay
+  }, [updateBounds]);
+
+  // Get the locations most likely to be in the center of an overlapped area
+  const getClusterCenter = (locations) => {
+    if (!locations || locations.length === 0) {
+      return DEFAULT_CENTER;
+    }
+    
+    // Average the positions
+    const sumLat = locations.reduce((acc, loc) => acc + loc.latitude, 0);
+    const sumLng = locations.reduce((acc, loc) => acc + loc.longitude, 0);
+    
+    return {
+      lat: sumLat / locations.length,
+      lng: sumLng / locations.length
+    };
+  };
+
+  // Generate positions for overlapped markers in a circle
+  const getSpreadPosition = (location, index, total, center) => {
+    if (!overlappedArea || overlappedArea.locations.findIndex(l => l.id === location.id) === -1) {
+      // Return original position for non-overlapped markers
+      return { lat: location.latitude, lng: location.longitude };
+    }
+    
+    // Calculate positions in a circle for overlapped markers
+    const spreadDistance = 0.0003; // Adjust based on zoom level if needed
+    const angle = (2 * Math.PI * index) / total;
+    
+    return {
+      lat: center.lat + spreadDistance * Math.sin(angle),
+      lng: center.lng + spreadDistance * Math.cos(angle)
+    };
+  };
+
+  // Modified map load handler to optimize tile loading
+  const onLoad = useCallback((map) => {
+    mapRef.current = map;
+    setMapLoaded(true);
+    
+    // Set the initial center (but only once)
+    if (mapCenterRef.current) {
+      map.setCenter(mapCenterRef.current);
+    }
+    
+    // After map is fully loaded, update state to no longer consider this initial loading
+    setTimeout(() => {
+      setInitialMapLoad(false);
+      console.log("Map initial load complete - dragging should be smooth now");
+    }, 1000);
+    
+    // Instead of tracking every center change, just update our ref after drag ends
+    // This avoids interfering with the map's smooth drag behavior
+    map.addListener('dragend', () => {
+      const newCenter = map.getCenter();
+      if (newCenter) {
+        const centerLatLng = {
+          lat: newCenter.lat(),
+          lng: newCenter.lng()
+        };
+        // Update our ref with the user's chosen position without triggering rerenders
+        mapCenterRef.current = centerLatLng;
+      }
+    });
+    
+    // Add dragstart listener to improve tile loading during drag
+    map.addListener('dragstart', () => {
+      // Set the map's background color to match the map style
+      map.setOptions({
+        backgroundColor: '#242f3e' // Dark blue/gray from our map style
+      });
+    });
+    
+    // Initial bounds setting
+    if (map.getBounds()) {
+      setCurrentBounds(map.getBounds());
+      
+      // Force an immediate bounds update to show locations
+      console.log("Map loaded, setting initial bounds");
+      updateBounds();
+      
+      // Trigger a map interaction to ensure locations are filtered properly
+      handleMapInteraction();
+    } else {
+      // Wait for bounds to be available (happens after map fully loads)
+      console.log("Map loaded but bounds not available yet, listening for idle event");
+      map.addListener('idle', () => {
+        if (map.getBounds()) {
+          console.log("Map idle, bounds now available");
+          setCurrentBounds(map.getBounds());
+          updateBounds();
+          handleMapInteraction();
+        }
+      });
+    }
+    
+    // Optimize tile loading during drag
+    map.setOptions({
+      tilt: 0, // disable 45° imagery to improve performance
+      maxZoom: 20,
+      minZoom: 3,
+      backgroundColor: '#242f3e', // Match the map style background
+      // Additional options to improve tile loading
+      gestureHandling: 'greedy',
+      clickableIcons: false
+    });
+  }, [updateBounds, handleMapInteraction]);
+  
+  // Add effect to ensure locations are displayed when bounds are first set
+  useEffect(() => {
+    if (currentBounds && locations.length > 0 && mapLoaded) {
+      console.log("Bounds and locations available, ensuring locations are filtered properly");
+      // This will force the filtered locations to update based on the current bounds
+      handleMapInteraction();
+    }
+  }, [currentBounds, locations, mapLoaded, handleMapInteraction]);
+
+  const onUnmount = useCallback(() => {
+    mapRef.current = null;
+    setMapLoaded(false);
+  }, []);
+
+  // Handle zoom change
+  const handleZoomChanged = () => {
+    if (mapRef.current) {
+      const zoom = mapRef.current.getZoom();
+      setCurrentZoom(zoom);
+      
+      // Update bounds when zoom changes
+      if (mapRef.current.getBounds()) {
+        setCurrentBounds(mapRef.current.getBounds());
+      }
+    }
+  };
+  
+  // Handle location click
+  const handleLocationClick = (location) => {
+    console.log("Location clicked:", location);
+    setSelectedLocation(location);
+    
+    // Add location to recent views if function is available
+    if (addRecentLocation && typeof addRecentLocation === 'function') {
+      console.log("Adding location to recents:", location);
+      addRecentLocation(location);
+    } else {
+      console.warn("addRecentLocation function not available. Make sure dashboard is initialized.");
+      
+      // Fallback: Store in localStorage directly if dashboard function isn't available
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          const recentLocations = userData.recentLocations || [];
+          
+          // Remove if already exists (to move to top)
+          const filteredLocations = recentLocations.filter(loc => loc.id !== location.id);
+          
+          // Add to beginning (most recent first)
+          const updatedLocations = [location, ...filteredLocations].slice(0, 5);
+          
+          // Update localStorage
+          localStorage.setItem('user', JSON.stringify({
+            ...userData,
+            recentLocations: updatedLocations
+          }));
+        }
+      } catch (error) {
+        console.error("Error updating recent locations in localStorage:", error);
+      }
+    }
+  };
+
+  // Handle add to collection button click
+  const handleAddToCollection = (location) => {
+    setIsAddToCollectionModalOpen(true);
+  };
+
+  // Close modal
+  const handleModalClose = () => {
+    if (selectedLocation) {
+      // Set the highlighted location ID when the modal closes
+      setHighlightedLocationId(selectedLocation.id);
+      
+      // Center map on the location that was just viewed
+      if (mapRef.current) {
+        const locationPosition = { lat: selectedLocation.latitude, lng: selectedLocation.longitude };
+        mapRef.current.panTo(locationPosition);
+        mapCenterRef.current = locationPosition;
+      }
+      
+      // Clear the highlighted location after animation completes
+      setTimeout(() => {
+        setHighlightedLocationId(null);
+      }, 5000);
+    }
+    setSelectedLocation(null);
+  };
+
+  // Handle collection modal close
+  const handleCollectionModalClose = () => {
+    setIsAddToCollectionModalOpen(false);
+  };
+
+  // Handle creating a new collection
+  const handleCreateCollection = async (name) => {
+    try {
+      if (!selectedLocation || !userId) return null;
+      
+      console.log("Creating new collection:", name);
+      console.log("User ID:", userId);
+      
+      // HARDCODED URL
+      const response = await fetch(`http://localhost:5001/api/users/${userId}/collections`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: parseInt(userId),
+          name: name,
+          aura_color: selectedLocation?.aura_color || 'linear-gradient(to right, #6d4aff, #9e8aff)'
+        }),
+      });
+      
+      // Log response status
+      console.log(`Create collection response status: ${response.status}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Create collection error response:", errorText);
+        throw new Error(`Failed to create collection: ${response.status}`);
+      }
+      
+      const newCollection = await response.json();
+      console.log("Created collection:", newCollection);
+      
+      // Update collections state
+      setCollections(prev => [...prev, newCollection]);
+      
+      // Show success toast
+      setToastMessage(`Created collection: ${name}`);
+      setToastVisible(true);
+      
+      // Automatically add the current location to the new collection
+      if (newCollection.id) {
+        try {
+          // HARDCODED URL
+          const addResponse = await fetch(`http://localhost:5001/api/users/${userId}/collections/${newCollection.id}/add_location`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              location_id: selectedLocation.id
+            }),
+          });
+          
+          // Log response status
+          console.log(`Add location response status: ${addResponse.status}`);
+          
+          if (!addResponse.ok) {
+            const errorText = await addResponse.text();
+            console.error("Add location error response:", errorText);
+            throw new Error(`Failed to add location: ${addResponse.status}`);
+          }
+          
+          if (addResponse.ok) {
+            const updatedCollection = await addResponse.json();
+            
+            // Update collections state with the newly updated collection
+            setCollections(prevCollections => 
+              prevCollections.map(col => 
+                col.id === updatedCollection.id ? updatedCollection : col
+              )
+            );
+            
+            // Refresh dashboard collections if the function is available
+            if (window.oraApp?.dashboard?.refreshCollections) {
+              window.oraApp.dashboard.refreshCollections();
+            }
+            
+            // Update toast message to show location was added
+            setToastMessage(`Added ${selectedLocation.name} to new collection!`);
+            setToastVisible(true);
+            
+            // Close the modal
+            setIsAddToCollectionModalOpen(false);
+          }
+        } catch (addError) {
+          console.error('Error adding location to new collection:', addError);
+        }
+      }
+      
+      return newCollection.id;
+    } catch (error) {
+      console.error('Error creating collection:', error);
+      // Show error toast
+      setToastMessage(`Error creating collection: ${error.message}`);
+      setToastVisible(true);
+      return null;
+    }
+  };
+
+  // Handle adding a location to an existing collection
+  const handleAddLocationToCollection = async (collectionId) => {
+    try {
+      if (!selectedLocation) return;
+      
+      // Make sure collectionId is a number and not an object
+      if (typeof collectionId === 'object') {
+        console.error('Invalid collection ID, received object instead of ID value', collectionId);
+        throw new Error('Invalid collection ID');
+      }
+      
+      console.log(`Adding location ${selectedLocation.id} to collection ${collectionId}`);
+      
+      // HARDCODED URL
+      const response = await fetch(`http://localhost:5001/api/users/${userId}/collections/${collectionId}/add_location`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          location_id: selectedLocation.id
+        }),
+      });
+      
+      // Log response status
+      console.log(`Add location to existing collection response status: ${response.status}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Add location error response:", errorText);
+        throw new Error(`Failed to add location to collection: ${response.status}`);
+      }
+      
+      const updatedCollection = await response.json();
+      console.log("Updated collection:", updatedCollection);
+      
+      // Update collections state with the newly updated collection
+      setCollections(prevCollections => 
+        prevCollections.map(col => 
+          col.id === updatedCollection.id ? updatedCollection : col
+        )
+      );
+      
+      // Refresh dashboard collections if the function is available
+      if (window.oraApp?.dashboard?.refreshCollections) {
+        window.oraApp.dashboard.refreshCollections();
+      }
+      
+      // Show success toast
+      setToastMessage(`Added ${selectedLocation.name} to collection!`);
+      setToastVisible(true);
+      
+      // Close the modal
+      setIsAddToCollectionModalOpen(false);
+    } catch (error) {
+      console.error('Error adding location to collection:', error);
+      // Show error toast
+      setToastMessage("Error adding to collection");
+      setToastVisible(true);
+    }
+  };
+
+  // Handle back button click
+  const handleBackClick = () => {
+    if (userId) {
+      navigate(`/auth/${userId}/dashboard`);
+    } else {
+      navigate('/');
+    }
+  };
+
+  // Center map on user's current location at ~500m view (approx. zoom level 16.5)
+  const handleCenterOnUser = () => {
+    console.log("CENTER ON USER CLICKED - Current location:", currentLocation);
+    if (mapRef.current && currentLocation) {
+      // This is the ONLY place where we explicitly center the map on user location
+      mapRef.current.panTo(currentLocation);
+      // Update the map center ref to match
+      mapCenterRef.current = currentLocation;
+      mapRef.current.setZoom(16.5); // Shows approximately 500m radius
+      // Force a brief controlled mode to ensure the center takes effect
+      setInitialMapLoad(true);
+      setTimeout(() => {
+        setInitialMapLoad(false);
+      }, 500);
+    }
+  };
+
+  // Get filtered locations based on current filters and view bounds
+  const getFilteredLocations = useCallback(() => {
+    if (!locations.length) return [];
+    
+    // Base filter by selected type
+    let filteredByType = locations;
+    if (activeFilter) {
+      filteredByType = locations.filter(location => {
+        const placeType = (location.place_type || '').toLowerCase();
+        return placeType.includes(activeFilter.toLowerCase());
+      });
+    }
+    
+    // Adaptive limit based on zoom level and performance 
+    // More locations at wider zoom levels
+    let maxLocations = 100; // Default max
+    
+    if (currentZoom < 12) {
+      maxLocations = 80; // Far out - show more major landmarks
+    } else if (currentZoom < 14) {
+      maxLocations = 90; // Medium zoom - show more locations
+    } else if (currentZoom < 16) {
+      maxLocations = 95; // Closer zoom - show even more locations
+    } else {
+      maxLocations = 100; // Full detail in local neighborhood
+    }
+    
+    // IMPORTANT: For smooth dragging, use a consistent number of markers
+    if (currentBounds) {
+      // Filter to locations in current view
+      const locationsInView = filteredByType.filter(location => {
+        const position = { lat: location.latitude, lng: location.longitude };
+        return currentBounds.contains(position);
+      });
+      
+      // Prioritize by importance score
+      locationsInView.sort((a, b) => b.importanceScore - a.importanceScore);
+      
+      // Limit to improve performance
+      return locationsInView.slice(0, maxLocations);
+    } else {
+      // If no bounds yet, show locations near current location based on distance
+      const nearbyLocations = filteredByType.filter(location => {
+        if (!currentLocation || currentLocation === DEFAULT_CENTER) return true;
+        
+        // Simple distance calculation (approximate)
+        const latDiff = Math.abs(location.latitude - currentLocation.lat);
+        const lngDiff = Math.abs(location.longitude - currentLocation.lng);
+        
+        // This creates a rough square around the user location
+        // More precise would be to use haversine formula but this is faster
+        return latDiff < 0.05 && lngDiff < 0.05; // About 5km radius
+      });
+      
+      // Sort by importance
+      nearbyLocations.sort((a, b) => b.importanceScore - a.importanceScore);
+      
+      console.log(`No bounds yet, showing ${nearbyLocations.length} nearby locations`);
+      
+      // If we still don't have locations, just show the top 10 important ones from all locations
+      if (nearbyLocations.length === 0) {
+        console.log("No nearby locations, showing top important locations");
+        filteredByType.sort((a, b) => b.importanceScore - a.importanceScore);
+        return filteredByType.slice(0, 10);
+      }
+      
+      return nearbyLocations.slice(0, maxLocations);
+    }
+  }, [locations, currentZoom, currentBounds, activeFilter, currentLocation]);
+
+  // Get filtered locations for current zoom level and type filter
+  const filteredLocations = getFilteredLocations();
+
+  // In the component body, add a console log to debug
+  useEffect(() => {
+    if (currentLocation) {
+      console.log('Current location for marker:', currentLocation);
+    }
+  }, [currentLocation]);
+
+  // Function to open the add to collection modal
+  const handleOpenAddToCollectionModal = () => {
+    // Make sure collections are loaded
+    if (userId) {
+      try {
+        fetch(`http://localhost:5001/api/users/${userId}/collections`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Failed to fetch collections');
+            }
+            return response.json();
+          })
+          .then(userCollections => {
+            console.log("Fetched collections:", userCollections);
+            setCollections(userCollections || []);
+            
+            // Now open the modal
+            setIsAddToCollectionModalOpen(true);
+          })
+          .catch(error => {
+            console.error('Error fetching collections:', error);
+            setToastMessage("Error loading collections");
+            setToastVisible(true);
+          });
+      } catch (error) {
+        console.error('Error initializing collection modal:', error);
+      }
+    } else {
+      setIsAddToCollectionModalOpen(true);
+    }
+  };
+
+  // Set up handlers for location modal actions
+  useEffect(() => {
+    if (mapRef.current && isLoaded && window.google) {
+      // Set up map click handler for adding markers
+      const clickListener = window.google.maps.event.addListener(
+        mapRef.current,
+        'click',
+        (event) => {
+          console.log('Map clicked, adding marker');
+          // Implementation for adding markers on click
+        }
+      );
+
+      // Location modal handler for adding to collection
+      const handleLocationAddToCollection = (location) => {
+        setSelectedLocation(location);
+        handleOpenAddToCollectionModal();
+      };
+
+      // Expose handlers to window for LocationModal to use
+      if (!window.mapHandlers) {
+        window.mapHandlers = {};
+      }
+
+      window.mapHandlers.addToCollection = handleLocationAddToCollection;
+
+      return () => {
+        window.google.maps.event.removeListener(clickListener);
+        if (window.mapHandlers) {
+          delete window.mapHandlers.addToCollection;
+        }
+      };
+    }
+  }, [isLoaded, mapRef.current, handleOpenAddToCollectionModal]);
+
+  // Set initial center location only once when currentLocation is first set
+  useEffect(() => {
+    // Only set the initial map center if it hasn't been manually changed yet
+    // and we're still at the default location
+    if (
+      currentLocation && 
+      currentLocation !== DEFAULT_CENTER && 
+      mapCenterRef.current === DEFAULT_CENTER
+    ) {
+      console.log("Setting initial map center from currentLocation:", currentLocation);
+      mapCenterRef.current = currentLocation;
+      
+      // If map is already loaded, set its center
+      if (mapRef.current) {
+        mapRef.current.setCenter(currentLocation);
+        // Make sure we're in controlled mode during initial setup
+        setInitialMapLoad(true);
+        // Then release control after a small delay
+        setTimeout(() => {
+          setInitialMapLoad(false);
+        }, 1000);
+      }
+    }
+  }, [currentLocation]);
+
+  // Fetch user data including aura
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        console.log("Fetching user data for ID:", userId);
+        
+        const storedUser = localStorage.getItem('user');
+        let storedUserData = null;
+        
+        if (storedUser) {
+          storedUserData = JSON.parse(storedUser);
+          console.log("User data from localStorage:", storedUserData);
+          
+          if (storedUserData.aura_color || storedUserData.auraColor) {
+            console.log("Using user data with aura from localStorage");
+            const processedData = {
+              ...storedUserData,
+              username: storedUserData.username || "User",
+              aura_color: storedUserData.aura_color || storedUserData.auraColor || 'linear-gradient(to right, #6d4aff, #9e8aff)',
+              aura_shape: storedUserData.aura_shape || storedUserData.auraShape || 'balanced',
+              response_speed: storedUserData.response_speed || storedUserData.responseSpeed || 'medium'
+            };
+            setUserData(processedData);
+            return;
+          }
+        }
+        
+        const apiUrl = `http://localhost:5001/api/users/${userId}`;
+        console.log("API URL:", apiUrl);
+        
+        const response = await fetch(apiUrl);
+        console.log("API Response status:", response.status);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch user data: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log("API Response data:", data);
+        
+        const processedData = {
+          ...data,
+          username: data.username || "User",
+          aura_color: data.aura_color || data.auraColor || 'linear-gradient(to right, #6d4aff, #9e8aff)',
+          aura_shape: data.aura_shape || data.auraShape || 'balanced',
+          response_speed: data.response_speed || data.responseSpeed || 'medium'
+        };
+        
+        setUserData(processedData);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        // Set default user data if fetch fails
+        setUserData({
+          username: "User",
+          aura_color: 'linear-gradient(to right, #6d4aff, #9e8aff)',
+          aura_shape: 'balanced',
+          response_speed: 'medium'
+        });
+      }
+    };
+
+    if (userId) {
+      fetchUserData();
+    }
+  }, [userId]);
+
+  // Add wheel event handler for filter bar
+  const handleFilterWheel = (e) => {
+    if (filterScrollRef.current) {
+      // Prevent default vertical scrolling
+      e.preventDefault();
+      // Scroll horizontally based on wheel delta
+      filterScrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
+  if (loadError) {
+    return <div className="error-screen">Error loading Google Maps</div>;
+  }
+
+  if (!isLoaded) {
+    return <div className="loading-screen">Loading maps...</div>;
+  }
+
+  return (
+    <div className="discover-container">
+      <div className="discover-header">
+        <button className="back-button" onClick={handleBackClick}>
+          <span className="material-icons">arrow_back</span>
+        </button>
+        
+        {userData && (
+          <div className="user-aura-container">
+            <AuraVisualization 
+              auraColor={userData.aura_color}
+              auraShape={userData.aura_shape}
+              responseSpeed={userData.response_speed}
+            />
+          </div>
+        )}
+        
+        <button className="center-button" onClick={handleCenterOnUser}>
+          <span className="material-icons">my_location</span>
+        </button>
+      </div>
+      
+      <div className="filter-bar-container">
+        <div 
+          className="filter-bar" 
+          ref={filterScrollRef}
+          onWheel={handleFilterWheel}
+        >
+          {/* "All" filter option */}
+          <div 
+            className={`filter-item ${activeFilter === null ? 'active' : ''}`}
+            onClick={() => handleFilterClick(null)}
+          >
+            <span className="material-icons">all_inclusive</span>
+            <span className="filter-label">All</span>
+          </div>
+          
+          {/* Place type filters */}
+          {placeTypes.map(type => (
+            <div 
+              key={type.id}
+              className={`filter-item ${activeFilter === type.id ? 'active' : ''}`}
+              onClick={() => handleFilterClick(type.id)}
+            >
+              <span className="material-icons">{type.icon}</span>
+              <span className="filter-label">{type.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <GoogleMap
+        mapContainerStyle={mapContainerStyle}
+        // Only use the controlled center during initial loading
+        // After that, let Google Maps handle its own position for smooth dragging
+        center={initialMapLoad ? mapCenterRef.current : undefined}
+        zoom={16.5}
+        options={{
+          ...options,
+          draggableCursor: 'grab',
+          draggingCursor: 'grabbing',
+          backgroundColor: '#242f3e', // Match map background to reduce white flashes
+        }}
+        onClick={handleMapClick}
+        onLoad={onLoad}
+        onUnmount={onUnmount}
+        onZoomChanged={handleZoomChanged}
+        onDrag={() => {
+          // Mark map as actively dragging (used in filtering)
+          if (mapRef.current) {
+            mapRef.current.set('dragging', true);
+            
+            // Adjust map rendering during drag for smoother performance
+            if (!mapRef.current.get('dragOptimized')) {
+              mapRef.current.set('dragOptimized', true);
+              
+              // Add a class to optimize visual appearance during drag
+              document.querySelector('.gm-style')?.classList.add('map-dragging');
+            }
+          }
+        }}
+        onDragEnd={() => {
+          // Clear dragging state and update bounds
+          if (mapRef.current) {
+            mapRef.current.set('dragging', false);
+            mapRef.current.set('dragOptimized', false);
+            
+            // Remove optimization class
+            document.querySelector('.gm-style')?.classList.remove('map-dragging');
+          }
+          handleMapInteraction();
+        }}
+      >
+        {/* Fixed User location marker that stays at geographic coordinates */}
+        {currentLocation && currentLocation !== DEFAULT_CENTER && (
+          <>
+            {/* Pulsing background effect */}
+            <Marker
+              position={currentLocation}
+              icon={{
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+                    <style>
+                      @keyframes pulse {
+                        0% { opacity: 0.7; r: 50; }
+                        50% { opacity: 0.2; r: 80; }
+                        100% { opacity: 0.7; r: 50; }
+                      }
+                      .pulse {
+                        animation: pulse 2s infinite ease-in-out;
+                      }
+                    </style>
+                    <!-- Animated pulsing circle -->
+                    <circle cx="100" cy="100" r="50" fill="rgba(255,255,255,0.5)" class="pulse" />
+                  </svg>
+                `),
+                scaledSize: new window.google.maps.Size(200, 200),
+                anchor: new window.google.maps.Point(100, 100),
+              }}
+              zIndex={10000}
+              options={{ 
+                clickable: false,
+                optimized: false 
+              }}
+            />
+            {/* Central white dot */}
+            <Marker
+              position={currentLocation}
+              icon={{
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+                    <defs>
+                      <filter id="glow">
+                        <feGaussianBlur stdDeviation="4" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                    </defs>
+                    <!-- Main white circle with glow effect -->
+                    <circle cx="50" cy="50" r="32" fill="white" filter="url(#glow)" />
+                  </svg>
+                `),
+                scaledSize: new window.google.maps.Size(100, 100),
+                anchor: new window.google.maps.Point(50, 50),
+              }}
+              zIndex={10001}
+              options={{ 
+                clickable: false,
+                optimized: false 
+              }}
+            />
+          </>
+        )}
+
+        {/* Location markers with natural overlap */}
+        {!loading && mapLoaded && filteredLocations.map((location, index) => {
+          // Calculate position - either original or spread apart position if overlapped
+          const position = overlappedArea ? 
+            getSpreadPosition(
+              location, 
+              overlappedArea.locations.findIndex(l => l.id === location.id), 
+              overlappedArea.locations.length,
+              overlappedArea.center
+            ) : 
+            { lat: location.latitude, lng: location.longitude };
+          
+          const isOverlapped = overlappedArea && 
+            overlappedArea.locations.findIndex(l => l.id === location.id) !== -1;
+          
+          const isHighlighted = location.id === highlightedLocationId;
+            
+          return (
+            <AuraLocationMarker
+              key={location.id || `loc-${index}`}
+              location={location}
+              position={position}
+              onClick={() => handleLocationClick(location)}
+              zoom={currentZoom}
+              isExpanded={isOverlapped}
+              isHighlighted={isHighlighted}
+            />
+          );
+        })}
+      </GoogleMap>
+      
+      {/* Location detail modal */}
+      {selectedLocation && (
+        <LocationModal 
+          location={selectedLocation} 
+          onClose={handleModalClose}
+          onAddToCollection={handleAddToCollection}
+        />
+      )}
+      
+      {/* Collection Modal */}
+      {selectedLocation && isAddToCollectionModalOpen && (
+        <AddToCollectionModal
+          isOpen={isAddToCollectionModalOpen}
+          onClose={handleCollectionModalClose}
+          location={selectedLocation}
+          collections={collections}
+          onCreateCollection={handleCreateCollection}
+          onAddToCollection={handleAddLocationToCollection}
+        />
+      )}
+      
+      {/* Close button for expanded overlapped markers */}
+      {overlappedArea && (
+        <button 
+          className="close-overlap-button"
+          onClick={() => setOverlappedArea(null)}
+        >
+          ✕
+        </button>
+      )}
+      
+      {loading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p>Loading locations...</p>
+        </div>
+      )}
+      
+      {/* Toast notification */}
+      <CollectionToast
+        message={toastMessage}
+        isVisible={toastVisible}
+        onClose={() => setToastVisible(false)}
+      />
+    </div>
+  );
+}
+
+export default DiscoverScreen;

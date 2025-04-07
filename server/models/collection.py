@@ -13,16 +13,21 @@ class Collection(BaseModel):
     user = db.relationship('User', back_populates='collections')
     locations = db.relationship('Location', secondary='collection_locations')
 
-    def to_dict(self):
-        return {
+    def to_dict(self, include_locations=False):
+        collection_dict = {
             'id': self.id,
             'name': self.name,
             'is_base': self.is_base,
             'user_id': self.user_id,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
-            'locations': [location.to_dict() for location in self.locations]
+            'location_count': len(self.locations)
         }
+        
+        if include_locations:
+            collection_dict['locations'] = [location.to_dict() for location in self.locations]
+            
+        return collection_dict
 
 # This is a junction table to handle the many-to-many relationship between Collections and Locations
 collection_locations = db.Table('collection_locations',

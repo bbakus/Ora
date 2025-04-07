@@ -1,3 +1,9 @@
+
+@font-face {
+  font-family: 'Sansation_Regular';
+  src: url('//assets/fonts/Sansation_Regular.ttf');
+}
+
 .App {
   text-align: center;
 }

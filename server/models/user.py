@@ -3,6 +3,13 @@ from . import BaseModel
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
+# Define the friendship association table
+friendships = db.Table('friendships',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('friend_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('created_at', db.DateTime, default=datetime.utcnow)
+)
+
 class User(BaseModel):
     __tablename__ = 'users'
 
@@ -16,12 +23,42 @@ class User(BaseModel):
     # Relationships
     reviews = db.relationship('Review', back_populates='user')
     collections = db.relationship('Collection', back_populates='user')
+    
+    # Friendship relationship (self-referential many-to-many)
+    friends = db.relationship(
+        'User', 
+        secondary=friendships,
+        primaryjoin="User.id==friendships.c.user_id",
+        secondaryjoin="User.id==friendships.c.friend_id",
+        backref=db.backref('befriended_by', lazy='dynamic'),
+        lazy='dynamic'
+    )
 
     def set_password(self, password):
         self.hashed_password = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.hashed_password, password)
+    
+    def add_friend(self, user):
+        """Add a user to friends list"""
+        if user not in self.friends:
+            self.friends.append(user)
+            # Ensure the relationship is bidirectional
+            if self not in user.friends:
+                user.friends.append(self)
+            return True
+        return False
+    
+    def remove_friend(self, user):
+        """Remove a user from friends list"""
+        if user in self.friends:
+            self.friends.remove(user)
+            # Ensure the relationship is bidirectional
+            if self in user.friends:
+                user.friends.remove(self)
+            return True
+        return False
 
     def to_dict(self):
         """Convert user to dictionary for JSON response"""

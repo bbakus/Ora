@@ -1,0 +1,162 @@
+.aura-guide-container {
+    min-height: 100vh;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    background-color: #121212;
+    color: #f5f5f5;
+    position: relative;
+    z-index: 1;
+}
+
+.aura-guide-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 10px 0;
+}
+
+.back-button {
+    background: none;
+    border: none;
+    color: #f5f5f5;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    margin-right: 20px;
+    border-radius: 50%;
+    transition: background-color 0.3s;
+}
+
+.back-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.back-button .material-icons {
+    font-size: 36px;
+}
+
+.aura-guide-header h1 {
+    font-size: 66px;
+    margin: 0;
+    font-weight: 700;
+    color: #f5f5f5;
+    
+}
+
+.aura-guide-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+}
+
+.guide-image-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 200px;
+}
+
+.guide-image {
+    max-width: 100%;
+    max-height: 60vh;
+    border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .aura-guide-header h1 {
+        font-size: 40px;
+    }
+    
+    .guide-image {
+        max-height: 40vh;
+    }
+    
+    .guide-option-button {
+        padding: 15px;
+        font-size: 18px;
+    }
+} 
+
+
+.red-button {
+    background-color: red;
+    padding: 20px;
+    z-index: 99;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    position:absolute;
+    transform: translate(-50%, -1160%);
+    cursor: pointer;
+}
+
+.orange-button {
+    background-color: orange;
+    padding: 20px;
+    z-index: 99;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    position:absolute;
+    cursor: pointer;
+    transform: translate(310%, -1000%)
+}
+
+.yellow-button {
+    background-color: yellow;
+    padding: 20px;
+    z-index: 99;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    position:absolute;
+    cursor: pointer;
+    transform: translate(440%, -700%)
+}
+
+.green-button {
+    background-color: green;
+    padding: 20px;
+    z-index: 99;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    position:absolute;
+    cursor: pointer;
+    transform: translate(330%, -340%)
+}
+
+.teal-button {
+    background-color: cyan;
+    padding: 20px;
+    z-index: 99;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    position:absolute;
+    cursor: pointer;
+    transform: translate(-160%, -170%)
+}
+
+.blue-button {
+    background-color: blue;
+    padding: 20px;
+    z-index: 99;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    position:absolute;
+    cursor: pointer;
+    transform: translate(-500%, -500%)
+}

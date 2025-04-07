@@ -631,37 +631,17 @@
 
 /* iPhone-specific optimizations */
 @media only screen and (max-width: 1170px) {
-    .aura-visualization-container {
-        width: 300px;
-        height: 300px;
-        overflow: visible !important;
-        z-index: 9;
-        margin: 0 auto; /* Ensure center alignment */
+    .aura-container {
+        width: 100%;
+        height: 100%;
+        background: transparent;
     }
     
-    .aura-canvas, .gradient-canvas {
-        width: 100% !important;
-        height: 100% !important;
-        left: 0 !important;
-        top: 0 !important;
-        border-radius: 0 !important;
-        overflow: visible !important;
-    }
-    
-    .aura-shape-fast,
-    .aura-shape-medium-fast,
-    .aura-shape-medium-slow,
-    .aura-shape-slow,
-    .aura-shape-balanced,
-    .aura-shape-sparkling,
-    .aura-shape-flowing,
-    .aura-shape-pulsing {
-        filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.7));
-        overflow: visible !important;
-    }
-
-    .aura-decoration {
-        z-index: 11;
+    .aura-circle {
+        width: 70%; /* Reduced from 85% */
+        height: 70%; /* Reduced from 85% */
+        background: transparent;
+        aspect-ratio: 1/1; /* Force perfect circle on mobile */
     }
 }
 
@@ -673,23 +653,33 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: transparent;
     overflow: visible;
-    bottom: -40%;
+    padding: 0;
+    margin: 0 auto;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent; 
 }
 
 /* Inner circle container that holds the canvas and decorations */
 .aura-circle {
-    position: relative;
-    width: 80%;
-    height: 80%;
-    aspect-ratio: 1 / 1;
+    position: absolute;
+    width: 55%; /* Reduced from 70% */
+    height: 55%; /* Reduced from 70% */
+    max-width: 320px; /* Reduced from 400px */
+    max-height: 320px; /* Reduced from 400px */
+    aspect-ratio: 1/1; /* Force perfect square aspect ratio */
     border-radius: 50%;
-    overflow: visible;
     display: flex;
     align-items: center;
     justify-content: center;
-    
+    overflow: visible;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: transparent;
 }
 
 /* Canvas styles */
@@ -724,8 +714,8 @@
     }
     
     .aura-circle {
-        width: 90%;
-        height: 90%;
+        width: 70%; /* Reduced from 85% */
+        height: 70%; /* Reduced from 85% */
     }
 }
 

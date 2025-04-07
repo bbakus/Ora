@@ -1,718 +1,597 @@
-/* DiscoverScreen.css - Main layout with added specificity */
-.discover-container {
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.discover-content {
-  position: relative;
-  width: 100%;
-  height: calc(100vh - 80px);
-  display: flex;
-  flex-direction: column;
-}
-
-.map-container {
-  position: relative;
-  width: 100%;
-  height: 500px !important; /* Force height */
-  min-height: 500px;
-  z-index: 5; /* Ensure markers can appear */
-}
-
-/* Hide Google attribution and branding tags */
-.map-container .gmnoprint, 
-.map-container .gm-style-cc,
-.map-container .gm-style a[href^="https://maps.google.com/maps"],
-.map-container .gm-style a[title="Google Map"],
-.map-container .gm-style div:has(a[rel="noopener"]) {
-  display: none !important;
-}
-
-/* Ensure the map fills the container */
-.map-container > div {
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-/* Add marker-specific styles to ensure visibility */
-.gm-style-iw,
-.gm-style img,
-.gm-style div[role="button"] {
-  z-index: 1000 !important; /* Force high z-index */
-}
-
 .discover-screen {
   position: relative;
   width: 100%;
   height: 100vh;
-  overflow: hidden;
-  background-color: #111;
-  color: white;
-  font-family: 'Roboto', sans-serif;
+  overflow: hidden; /* Ensure no accidental scrolling */
 }
 
-/* Header styles */
+/* Make sure the map container doesn't have issues with pointer events */
+.discover-screen > div[style]:first-of-type {
+  z-index: 1 !important; /* Force GoogleMap container to have a z-index */
+  pointer-events: auto !important; /* Ensure clicks get through */
+}
+
+/* Additional rules to fix marker clickability across the entire map */
+.gm-style img {
+  pointer-events: auto !important;
+}
+
+/* Ensure the filter bar doesn't block map interactions */
+.filter-bar-container {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Fix marker clickability issues by ensuring overlays don't block interaction */
+.gm-style {
+  pointer-events: auto !important;
+}
+
+.gm-style > div:first-child {
+  pointer-events: auto !important;
+}
+
+/* Make all divs inside Google Maps have proper pointer-events */
+.gm-style div {
+  pointer-events: auto;
+}
+
+/* Ensure SVGs inside markers are clickable */
+.gm-style svg {
+  pointer-events: auto;
+}
+
+/* Filter bar now at the top of screen as a banner */
+.filter-bar-container {
+  position: absolute;
+  top: 0; /* Start from the very top */
+  left: 0;
+  right: 0;
+  transform: none;
+  width: 100%; /* Full width */
+  display: flex;
+  align-items: center;
+  padding: 30px 20px; /* More vertical padding */
+  background-color: rgba(0, 0, 0, 0.7);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  height: 320px;
+}
+
+/* Back button repositioned below filter bar */
+.back-button {
+  position: absolute;
+  top: 350px;
+  left: 20px;
+  width: 200px;
+  height: 200px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+}
+
+.back-button:hover {
+  background-color: rgba(0, 0, 0, 0.9);
+  transform: scale(1.05);
+}
+
+.back-button .material-icons {
+  color: white;
+  font-size: 100px;
+}
+
+.center-button {
+  position: absolute;
+  top: 350px;
+  right: 20px;
+  width: 200px;
+  height: 200px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.center-button:hover {
+  background-color: rgba(0, 0, 0, 0.9);
+  transform: scale(1.05);
+}
+
+.center-button .material-icons {
+  color: white;
+  font-size: 70px;
+}
+
+.location-counter {
+  position: absolute;
+  top: 230px;
+  right: 20px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 20px;
+  font-size: 16px;
+  font-weight: 500;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #242f3e;
+  color: white;
+  font-size: 1.2rem;
+}
+
+.error-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #242f3e;
+  color: white;
+  font-size: 1.2rem;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  z-index: 10;
+}
+
+.loading-spinner {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 4px solid white;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Info window styles */
+.location-info-window {
+  padding: 10px;
+  background-color: #242f3e;
+  color: white;
+  border-radius: 8px;
+  max-width: 250px;
+}
+
+.location-info-window h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.location-info-window p {
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+/* Custom marker style */
+.custom-marker {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.custom-marker:hover {
+  transform: scale(1.2);
+}
+
+/* Filter bar styles */
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 0 20px;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+  max-width: 100%;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.filter-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 15px 10px;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 200px; /* Much wider */
+  margin: 0 15px; /* More space between */
+  min-height: 200px;
+  justify-content: center;
+}
+
+.filter-item:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.filter-item.active {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+.filter-item .material-icons {
+  font-size: 90px;
+  margin-bottom: 15px;
+}
+
+.filter-label {
+  font-size: 45px;
+  text-align: center;
+  font-weight: 500;
+  display: block;
+  margin-top: 10px;
+}
+
+.filter-scroll-button {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 60px; /* Larger buttons */
+  height: 60px; /* Larger buttons */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  z-index: 11;
+  transition: all 0.2s;
+}
+
+.filter-scroll-button .material-icons {
+  font-size: 40px; /* Larger button icons */
+}
+
+.filter-scroll-button:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.filter-scroll-button.left {
+  margin-right: 20px; /* More space */
+}
+
+.filter-scroll-button.right {
+  margin-left: 20px; /* More space */
+}
+
+.filter-scroll-button.right.large {
+  width: 90px; /* Larger right button */
+  height: 90px; /* Larger right button */
+  margin-left: 30px;
+}
+
+.filter-scroll-button.right.large .material-icons {
+  font-size: 50px; /* Larger icon for the right button */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .filter-bar-container {
+    padding: 15px 5px;
+    height: 200px;
+  }
+  
+  .filter-item {
+    min-width: 100px;
+    min-height: 120px;
+    margin: 0 8px;
+    padding: 10px 5px;
+  }
+  
+  .filter-item .material-icons {
+    font-size: 36px;
+    margin-bottom: 8px;
+  }
+  
+  .filter-label {
+    font-size: 14px;
+    margin-top: 5px;
+  }
+  
+  .filter-scroll-button {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .filter-scroll-button.right.large {
+    width: 60px;
+    height: 60px;
+    margin-left: 15px;
+  }
+  
+  .filter-scroll-button .material-icons {
+    font-size: 24px;
+  }
+  
+  .filter-scroll-button.right.large .material-icons {
+    font-size: 32px;
+  }
+  
+  .back-button {
+    width: 120px;
+    height: 120px;
+    top: 220px; /* Adjusted for mobile */
+  }
+  
+  .back-button svg {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .center-button {
+    width: 100px; /* Even smaller on mobile */
+    height: 100px; /* Even smaller on mobile */
+    top: 360px; /* Adjusted for mobile */
+  }
+  
+  .center-button svg {
+    width: 40px; /* Smaller for mobile */
+    height: 40px; /* Smaller for mobile */
+  }
+  
+}
+
+/* Cluster marker styling */
+.cluster-marker {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(0, 0, 0, 0.6);
+  color: #000;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 18px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.cluster-marker:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* Animation for expanded markers */
+@keyframes pop-in {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  70% { transform: scale(1.1); opacity: 0.9; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.expanded-marker {
+  animation: pop-in 0.3s ease-out forwards;
+}
+
+/* Collection Toast */
+.collection-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #4b3cfb;
+  color: white;
+  padding: 16px 24px;
+  border-radius: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 300px;
+  max-width: 90%;
+  font-size: 18px;
+  font-weight: 600;
+  animation: toast-appear 0.3s ease-out;
+}
+
+.collection-toast span {
+  margin-right: 15px;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.toast-close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.toast-close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes toast-appear {
+  from {
+    transform: translate(-50%, 100px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+/* Add more specific styles when we implement the marker */
+
+/* Map container styles - optimize for smoother tile loading */
+.gm-style {
+  background-color: #242f3e !important; /* Match the map background color */
+}
+
+/* Improve tile loading appearance */
+.gm-style-pbc {
+  transition: opacity 0.2s ease-out !important;
+}
+
+/* Ensure tiles fade in smoothly */
+.gm-style img {
+  transition: opacity 0.15s ease-in !important;
+}
+
+/* Make sure the map container itself has the right background */
+.discover-container {
+  background-color: #242f3e;
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Optimize markers during drag */
+.gm-style-iw {
+  transition: opacity 0.2s ease !important;
+}
+
+/* Optimize appearance during drag */
+.map-dragging {
+  background-color: #242f3e !important;
+}
+
+/* Ensure map tiles have proper background during loading */
+.map-dragging img {
+  background-color: #242f3e;
+}
+
+/* Reduce markers opacity during drag for better performance */
+.map-dragging .gm-style > div > div > div > div > div:not([role="presentation"]) {
+  opacity: 0.8;
+}
+
+/* Preload adjacent tiles */
+@media (min-width: 768px) {
+  .gm-style {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+}
+
 .discover-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 10;
-  padding: 15px 20px;
-  background-color: rgba(17, 17, 17, 0.8);
-  backdrop-filter: blur(10px);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #333;
+  padding: 20px;
+  z-index: 1000;
+  background: transparent;
 }
 
-.discover-header h1 {
-  margin: 0 auto 0 0;
-  font-size: 1.5rem;
-  font-weight: 500;
-}
-
-.discover-filters {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.filter-select, select {
-  background-color: rgba(30, 30, 30, 0.8);
-  border: 1px solid #444;
-  border-radius: 4px;
-  color: white;
-  padding: 0.5rem;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.filter-select:hover, select:hover {
-  background-color: rgba(40, 40, 40, 0.8);
-}
-
-.search-button {
-  background-color: #6d4aff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.search-button:hover {
-  background-color: #8864fe;
-}
-
-/* User aura display */
 .user-aura-container {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.user-aura {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  overflow: hidden;
-}
-
-.user-name {
-  font-size: 0.9rem;
-}
-
-.user-name p {
-  margin: 0;
-}
-
-/* Map styles */
-.map-loading, .map-error {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  color: white;
-  background-color: #222;
-  font-size: 1.2rem;
-}
-
-/* Location Modal */
-.location-modal {
   position: fixed;
-  top: 0;
-  left: 0;
+  left: 50%;
+  top: 350px; /* Position below the filter header */
+  transform: translateX(-50%);
+  width: 350px;
+  height: 350px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999; /* Ensure it's above the map but below the header */
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  padding: 80px;
+}
+
+.user-aura-container .aura-container {
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 100;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-.location-modal.visible {
-  opacity: 1;
-  visibility: visible;
+.user-aura-container .aura-circle {
+  width: 100%;
+  height: 100%;
 }
 
-.modal-content {
-  background: #fff;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 500px;
-  padding: 1.5rem;
-  position: relative;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.close-button {
+/* Location Modal Close Button */
+.location-modal .close-button {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: 20px;
+  right: 20px;
   background: none;
   border: none;
-  color: #888;
-  font-size: 1.5rem;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.close-button:hover {
-  color: #333;
-}
-
-.modal-content h2 {
-  margin-top: 0;
-  margin-right: 2rem;
-  font-size: 1.8rem;
-  color: #333;
-  margin-bottom: 1rem;
-}
-
-.location-details {
-  margin: 1.5rem 0;
-}
-
-.location-details p {
-  margin: 0.5rem 0;
-  color: #444;
-  font-size: 1rem;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.details-button, .directions-button {
-  flex: 1;
-  padding: 0.8rem 1rem;
-  border-radius: 6px;
-  border: none;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.details-button {
-  background-color: #4285F4;
   color: white;
-}
-
-.details-button:hover {
-  background-color: #356ac3;
-}
-
-.directions-button {
-  background-color: #34A853;
-  color: white;
-}
-
-.directions-button:hover {
-  background-color: #2a8644;
-}
-
-/* Suggested locations overlay */
-.suggested-overlay {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background-color: rgba(17, 17, 17, 0.9);
-  backdrop-filter: blur(10px);
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  z-index: 5;
-  padding: 1rem;
-  padding-top: 0;
-  box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.2);
-  border-top: 1px solid #333;
-  max-height: 40vh;
-  overflow-y: auto;
-}
-
-.handle {
+  font-size: 80px; /* Much larger font size */
+  cursor: pointer;
+  width: 120px; /* Much larger button size */
+  height: 120px; /* Much larger button size */
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 0.5rem;
-  cursor: grab;
-}
-
-.handle-bar {
-  width: 70px;
-  height: 4px;
-  background-color: #444;
-  border-radius: 2px;
-}
-
-.suggested-overlay h2 {
-  margin: 0.5rem 0 1rem;
-  font-size: 1.2rem;
-  font-weight: 500;
-}
-
-.location-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.location-card {
-  display: flex;
-  padding: 0.8rem;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  margin-bottom: 0.8rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  cursor: pointer;
-}
-
-.location-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.location-content {
-  flex: 1;
-}
-
-.location-content h3 {
-  margin: 0 0 0.3rem;
-  font-size: 1rem;
-  color: #333;
-}
-
-.location-type {
-  margin: 0;
-  font-size: 0.8rem;
-  color: #666;
-  text-transform: capitalize;
-}
-
-.location-rating {
-  margin: 0.3rem 0 0;
-  font-size: 0.8rem;
-  color: #f5a623;
-}
-
-.location-aura-marker {
-  width: 40px;
-  height: 40px;
   border-radius: 50%;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-}
-
-/* Loading spinner */
-.loading-spinner {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100px;
-  color: #bbb;
-}
-
-.no-locations {
-  text-align: center;
-  color: #aaa;
-  padding: 2rem;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .discover-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-  
-  .discover-filters {
-    width: 100%;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-  }
-  
-  .user-aura-container {
-    align-self: flex-end;
-  }
-  
-  .location-cards {
-    grid-template-columns: 1fr;
-  }
-  
-  .modal-content {
-    width: 95%;
-    padding: 1rem;
-  }
-  
-  .modal-actions {
-    flex-direction: column;
-  }
-}
-
-.test-button {
-  background-color: #FF5E62;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  cursor: pointer;
   transition: all 0.2s ease;
+  z-index: 1000;
 }
 
-.test-button:hover {
-  background-color: #FF7E82;
-}
-
-.debug-info {
-  background-color: rgba(0, 0, 0, 0.7);
-  border-radius: 6px;
-  padding: 10px;
-  margin-top: 10px;
-  text-align: left;
-  font-family: monospace;
-  font-size: 12px;
-}
-
-.debug-list {
-  padding-left: 20px;
-  margin: 10px 0;
-}
-
-.debug-list li {
-  margin-bottom: 5px;
-}
-
-.create-test-button {
-  background-color: #34A853;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  margin-top: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.create-test-button:hover {
-  background-color: #2a8644;
-}
-
-.location-coords {
-  margin: 0.3rem 0 0;
-  font-size: 0.7rem;
-  color: #888;
-  font-family: monospace;
-}
-
-/* Suggested location tabs */
-.suggested-locations-tabs {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 10px;
-  margin-bottom: 20px;
-}
-
-.suggested-location-tab {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background-color: #1a1a1a;
-  border-radius: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  max-width: 120px;
-  min-width: 100px;
-}
-
-.suggested-location-tab:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-  background-color: #2a2a2a;
-}
-
-.suggested-location-name {
-  font-size: 14px;
-  font-weight: 500;
-  text-align: center;
-  margin-bottom: 5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
-.suggested-location-aura-small {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-}
-
-.aura-indicator {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-size: cover;
-  background-position: center;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
-  animation: smallPulse 3s infinite ease-in-out;
-}
-
-@keyframes smallPulse {
-  0% {
-    transform: scale(0.9);
-    box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
-  }
-  50% {
-    transform: scale(1.1);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-  }
-  100% {
-    transform: scale(0.9);
-    box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
-  }
-}
-
-/* Update suggested section to be more compact */
-.suggested-section {
-  margin-bottom: 20px;
-  padding: 10px;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 8px;
-}
-
-.suggested-section h2 {
-  font-size: 16px;
-  margin-bottom: 10px;
-  text-align: center;
-}
-
-/* Toggle button styling */
-.toggle-locations-button {
-  background-color: #3a3a3a;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 16px;
-  margin-top: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s ease;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.toggle-locations-button:hover {
-  background-color: #4a4a4a;
-}
-
-/* Solid aura visualization */
-.solid-aura-visualization {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  margin: 0 auto;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-  animation: pulse 3s infinite ease-in-out;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-  }
-  50% {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-  }
-}
-
-/* Map controls */
-.map-controls {
-  display: flex;
-  align-items: center;
-  margin-left: auto;
-}
-
-.show-all-markers-button {
-  background-color: rgba(40, 40, 40, 0.8);
-  color: white;
-  border: 1px solid #444;
-  border-radius: 20px;
-  padding: 5px 15px;
-  font-size: 14px;
-  cursor: pointer;
-  margin-right: 10px;
-  transition: all 0.3s ease;
-}
-
-.show-all-markers-button:hover {
-  background-color: rgba(60, 60, 60, 0.8);
-}
-
-/* Location counter */
-.location-counter {
-  background-color: rgba(40, 40, 40, 0.8);
-  color: white;
-  padding: 5px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  margin-right: 10px;
-}
-
-/* Ensure markers are highly visible on map */
-.gm-style img,
-.gm-style-iw {
-  max-width: none !important;
-  z-index: 1000 !important;
-}
-
-/* Overlay marker styles */
-.overlay-marker-container {
-  position: absolute;
-}
-
-.aura-visualization-overlay {
-  width: 50px;
-  height: 50px;
-  transition: transform 0.3s ease;
-  animation: pulse 2s infinite ease-in-out;
-}
-
-.aura-visualization-overlay:hover {
+.location-modal .close-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
   transform: scale(1.1);
-  z-index: 10;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    box-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
-  }
-  50% {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.9);
-  }
-  100% {
-    transform: scale(1);
-    box-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
-  }
-}
-
-@keyframes smallPulse {
-  0% {
-    transform: scale(1);
-    box-shadow: 0 0 3px rgba(255, 255, 255, 0.5);
-  }
-  50% {
-    transform: scale(1.03);
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
-  }
-  100% {
-    transform: scale(1);
-    box-shadow: 0 0 3px rgba(255, 255, 255, 0.5);
-  }
-}
-
-/* No locations message */
-.no-locations-message {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: rgba(17, 17, 17, 0.8);
-  color: white;
-  padding: 15px 20px;
-  border-radius: 8px;
-  font-size: 16px;
-  z-index: 10;
-  text-align: center;
-  max-width: 80%;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-/* Map error message */
-.map-error {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: rgba(255, 50, 50, 0.8);
-  color: white;
-  padding: 15px 20px;
-  border-radius: 8px;
-  font-size: 16px;
-  z-index: 10;
-  text-align: center;
-  max-width: 80%;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-/* Location marker animations */
-.marker-animation {
-  animation: markerPulse 2s infinite;
-}
-
-@keyframes markerPulse {
-  0% {
-    transform: scale(1);
-    opacity: 0.9;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0.9;
-  }
 }

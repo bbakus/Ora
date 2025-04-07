@@ -6,7 +6,7 @@
     flex-direction: column;
     gap: 24px;
     transition: all 0.3s ease;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: Arial, Helvetica, sans-serif;
     justify-content: space-between;
     background-color: #121212 !important;
     color: #f5f5f5 !important;
@@ -31,6 +31,7 @@
     margin: 0;
     font-weight: 700;
     color: #f5f5f5 !important;
+    font-family: Arial, Helvetica, sans-serif
 }
 
 /* Dashboard Content */
@@ -83,6 +84,13 @@
     flex: 1;
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    overflow: visible;
+    background-color: #1e1e1e;
+    aspect-ratio: 1/1;
 }
 
 .square-widget {
@@ -92,7 +100,7 @@
     align-items: center;
     justify-content: center;
     padding: 0;
-    overflow: hidden;
+    overflow: visible;
     max-width: 50%;
     border-radius: 20px;
     background-color: #1e1e1e !important;
@@ -101,15 +109,18 @@
     z-index: 1;
 }
 
-.aura-visualization {
+.aura-visualization-dashboard {
     margin: 0 auto;
-    width: 100%;
-    height: 100%;
+    margin-top: 40px;
+    width: 370px;
+    height: 400px;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1;
+    background: transparent;
+    filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.3));
 }
 
 /* Discover Widget */
@@ -126,6 +137,13 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
     position: relative;
     z-index: 1;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.discover-widget:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
 }
 
 .discover-widget h2 {
@@ -145,6 +163,86 @@
     position: relative;
     z-index: 1;
     border-radius: 0 0 20px 20px;
+    min-height: 200px;
+}
+
+.map-container.full-size {
+    border-radius: 20px;
+    height: 100%;
+}
+
+.map-placeholder {
+    width: 100%;
+    height: 100%;
+    background-color: #242f3e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.map-placeholder-content {
+    position: relative;
+    width: 60px;
+    height: 60px;
+}
+
+.placeholder-dot {
+    width: 60px;
+    height: 60px;
+    background-color: #4285F4;
+    border: 2px solid white;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.7;
+    }
+    50% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0.8);
+        opacity: 0.7;
+    }
+}
+
+.map-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.map-overlay:hover {
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.map-explore-button {
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.map-explore-button:hover {
+    transform: scale(1.05);
+    background-color: rgba(0, 0, 0, 0.9);
 }
 
 .map-loading, .map-error {
@@ -176,224 +274,182 @@
     z-index: 10;
 }
 
-/* Suggestions Widget */
-.suggestions-widget {
-    flex: 2;
-    position: relative;
-    z-index: 1;
+/* Friends Widget - Updated for much larger size */
+.friends-widget {
+    background-color: #1e1e1e !important;
+    border-radius: 16px !important;
+    padding: 24px !important; /* Decreased padding */
+    margin-bottom: 20px !important; /* Decreased margin */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    min-height: 250px; /* Decreased minimum height */
 }
 
-.suggestions-widget h2 {
-    margin-top: 0;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #333;
-    font-size: 47px;
-    margin-bottom: 14px;
-    color: #f5f5f5 !important;
-}
-
-.suggestions-container {
-    margin-top: 8px;
-    position: relative;
-    z-index: 1;
-}
-
-.location-suggestions {
-    margin: 12px 0;
+.friends-widget-header {
     display: flex;
-    flex-direction: column;
-    gap: 10px; /* Reduced gap */
-    position: relative;
-    z-index: 1;
-}
-
-.location-card {
-    padding: 18px; /* Reduced padding */
-    border-radius: 14px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
     justify-content: space-between;
-    background-color: #2a2a2a !important;
-    border: 1px solid #333;
-    cursor: pointer;
-    position: relative;
-    z-index: 1;
-}
-
-.location-card:hover {
-    background-color: #333 !important;
-}
-
-.location-card-content {
-    flex: 1;
-    position: relative;
-    z-index: 1;
-}
-
-.location-card h3 {
-    margin: 0;
-    font-size: 40px;
-    color: #f5f5f5 !important;
-}
-
-.location-aura-placeholder {
-    width: 90px;
-    height: 90px;
-    border-radius: 50%;
-    background-color: #8864fe;
-    margin-left: 24px;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 1;
-}
-
-/* Collections Widget */
-.collections-widget {
-    flex: 3;
-    position: relative;
-    z-index: 1;
-}
-
-.collections-container {
-    margin-top: 20px;
-    position: relative;
-    z-index: 1;
-}
-
-.collections-grid {
-    display: flex;
-    flex-direction: row;
-    gap: 20px;
-    margin-bottom: 20px;
-    position: relative;
-    z-index: 1;
-}
-
-.collections-column {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    position: relative;
-    z-index: 1;
-}
-
-.column-title {
-    font-size: 45px;
-    margin: 0 0 16px 0;
-    font-weight: 600;
-    color: #f5f5f5 !important;
-}
-
-.collection-card {
-    padding: 20px;
-    border-radius: 14px;
-    background-color: #2a2a2a !important;
-    border: 1px solid #333;
-    display: flex;
     align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    position: relative;
-    z-index: 1;
+    margin-bottom: 24px; /* Decreased margin */
 }
 
-.collection-card:hover {
-    background-color: #333 !important;
-}
-
-.collection-content {
-    flex: 1;
-    position: relative;
-    z-index: 1;
-}
-
-.collection-content h3 {
+.friends-widget-header h2 {
     margin: 0;
-    font-size: 40px;
-    color: #f5f5f5 !important;
-}
-
-.collection-content p {
-    margin: 5px 0 0 0;
-    font-size: 16px;
-    color: #aaa;
-}
-
-.collection-aura-placeholder {
-    width: 90px;
-    height: 90px;
-    border-radius: 50%;
-    background-color: #8864fe;
-    margin-left: 24px;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 1;
-}
-
-/* Action Button */
-.action-button {
-    background-color: #6d4aff !important;
-    color: white !important;
-    border: none;
-    border-radius: 28px;
-    padding: 16px 24px;
-    font-size: 18px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-top: 20px;
-    width: 100%;
-    position: relative;
-    z-index: 1;
-}
-
-.action-button:hover {
-    background-color: #7c4dff !important;
-    transform: translateY(-2px);
-}
-
-/* Footer */
-.dashboard-footer {
-    display: flex;
-    justify-content: center;
-    padding: 20px;
-    margin-top: 20px;
-    position: relative;
-    z-index: 1;
-}
-
-.footer-button {
-    background-color: transparent;
-    color: #6d4aff;
-    border: 1px solid #6d4aff;
-    border-radius: 28px;
-    padding: 16px 24px;
-    font-size: 18px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    z-index: 1;
-}
-
-.footer-button:hover {
-    background-color: rgba(109, 74, 255, 0.1);
-}
-
-/* Loading and Error States */
-.loading, .error {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    font-size: 24px;
+    padding: 0;
+    font-size: 65px; /* Increased font size even more */
     color: #f5f5f5;
-    text-align: center;
-    padding: 20px;
+    border: none;
+}
+
+.add-friend-btn {
+    display: flex;
+    align-items: center;
+    gap: 18px; /* Increased gap even more */
+    padding: 24px 48px; /* Significantly increased padding even more */
+    border: none;
+    border-radius: 35px; /* Even rounder corners */
+    background: linear-gradient(to right, #00b7c2, #4ecdc4); /* Teal gradient */
+    color: white;
+    font-size: 28px; /* Significantly increased font size even more */
+    font-weight: 700; /* Bolder text */
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 6px 16px rgba(0, 183, 194, 0.4);
+}
+
+.add-friend-btn .material-icons {
+    font-size: 34px; /* Increased icon size even more */
+}
+
+.add-friend-btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0, 183, 194, 0.6);
+}
+
+.friends-list-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0; /* Added padding */
+}
+
+.friends-list {
+    display: flex;
+    gap: 24px; /* Increased gap */
+    flex: 1;
+    overflow-x: hidden;
+    padding: 10px 0; /* Added padding */
+}
+
+.friend {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 120px; /* Increased min width */
+    cursor: pointer;
     position: relative;
-    z-index: 1;
+    transition: transform 0.2s;
+}
+
+.friend:hover {
+    transform: translateY(-5px);
+}
+
+.friend-aura {
+    width: 100px; /* Increased size */
+    height: 100px; /* Increased size */
+    border-radius: 50%;
+    margin-bottom: 12px; /* Increased margin */
+    background-size: 200% 200%;
+    animation: gradient 5s ease infinite;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes gradient {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.friend-name {
+    font-size: 20px; /* Increased font size */
+    text-align: center;
+    margin: 0;
+    color: #f5f5f5;
+    max-width: 120px; /* Increased max width */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500; /* Added font weight */
+}
+
+.friend-status {
+    display: none;
+}
+
+.next-friends-btn {
+    width: 50px; /* Increased size */
+    height: 50px; /* Increased size */
+    border-radius: 50%;
+    background: linear-gradient(to right, #00b7c2, #4ecdc4); /* Teal gradient */
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 8px rgba(0, 183, 194, 0.3);
+    margin-left: 15px; /* Added margin */
+}
+
+.next-friends-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 183, 194, 0.4);
+}
+
+.next-friends-btn .material-icons {
+    font-size: 24px; /* Increased icon size */
+    color: white;
+}
+
+.empty-friends {
+    text-align: center;
+    padding: 40px; /* Decreased padding */
+    color: #aaa;
+    font-size: 48px;
+    font-weight: 600;
+}
+
+.empty-collections {
+    text-align: center;
+    padding: 20px; /* Decreased padding */
+    color: #aaa;
+    font-size: 32px;
+    font-weight: 500;
+    background-color: #2a2a2a;
+    border-radius: 14px;
+    border: 1px solid #333;
+    margin-bottom: 16px;
+}
+
+.loading-indicator {
+    width: 50px; /* Increased size */
+    height: 50px; /* Increased size */
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top: 4px solid #00b7c2; /* Teal color */
+    border-radius: 50%;
+    margin: 0 auto 20px auto; /* Increased margin */
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /* Responsive Styles */
@@ -464,18 +520,6 @@
         height: 80px;
     }
     
-    .action-button,
-    .footer-button {
-        font-size: 47px;
-        padding: 20px 28px;
-    }
-    
-    .aura-visualization {
-        width: 250px;
-        height: 250px;
-        margin: 20px auto;
-    }
-    
     /* Make suggestions widget smaller but with room for 3+ location cards */
     .suggestions-widget {
         max-height: 600px;
@@ -501,4 +545,406 @@
             flex-direction: column;
         }
     }
+}
+
+/* Collections Widget */
+.collections-widget {
+    flex: 3;
+    position: relative;
+    z-index: 1;
+    min-height: 300px; /* Decreased from 500px */
+    padding-bottom: 10px !important;
+    margin-bottom: 10px !important;
+    max-height: 600px;
+}
+
+.collections-container {
+    margin-top: 20px;
+    position: relative;
+    z-index: 1;
+    
+}
+
+.collections-grid {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.collections-column-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+}
+
+.collections-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Keep small gap */
+    position: relative;
+    z-index: 1;
+    max-height: 450px; /* Decreased from 600px */
+    overflow-y: auto;
+    padding-right: 10px;
+    padding-bottom: 0;
+    scrollbar-width: thin;
+    scrollbar-color: #00b7c2 #2a2a2a;
+}
+
+.column-title {
+    font-size: 45px;
+    margin: 0 0 16px 0;
+    font-weight: 600;
+    color: #f5f5f5 !important;
+    position: sticky;
+    top: 0;
+    background-color: #1e1e1e;
+    z-index: 2;
+    padding-bottom: 8px;
+}
+
+/* Styling for WebKit browsers (Chrome, Safari) */
+.collections-column::-webkit-scrollbar {
+    width: 8px;
+}
+
+.collections-column::-webkit-scrollbar-track {
+    background: #2a2a2a;
+    border-radius: 4px;
+}
+
+.collections-column::-webkit-scrollbar-thumb {
+    background: #00b7c2;
+    border-radius: 4px;
+}
+
+.collections-column::-webkit-scrollbar-thumb:hover {
+    background: #4ecdc4;
+}
+
+.collection-card {
+    padding: 20px;
+    border-radius: 14px;
+    background-color: #2a2a2a !important;
+    border: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.collection-card:hover {
+    background-color: #333 !important;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border: 1px solid #444;
+}
+
+.collection-card:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.collection-content {
+    flex: 1;
+    position: relative;
+    z-index: 1;
+}
+
+.collection-content h3 {
+    margin: 0;
+    font-size: 40px;
+    color: #f5f5f5 !important;
+}
+
+.collection-content p {
+    margin: 5px 0 0 0;
+    font-size: 16px;
+    color: #aaa;
+}
+
+.collection-aura-placeholder {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    margin-left: 24px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+}
+
+/* Action Button - Updated with teal gradient */
+.action-button {
+    background: linear-gradient(to right, #00b7c2, #4ecdc4) !important; /* Teal gradient */
+    color: white !important;
+    border: none;
+    border-radius: 28px;
+    padding: 16px 24px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 4px 8px rgba(0, 183, 194, 0.3);
+}
+
+.action-button:hover {
+    background: linear-gradient(to right, #00a6b0, #3dbcb4) !important; /* Slightly darker teal gradient */
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 183, 194, 0.4);
+}
+
+/* Footer - Updated with teal gradient for the button */
+.dashboard-footer {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    margin-top: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.footer-button {
+    background: linear-gradient(to right, #00b7c2, #4ecdc4);
+    color: white;
+    border: none;
+    border-radius: 28px;
+    padding: 16px 30px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 4px 8px rgba(0, 183, 194, 0.3);
+}
+
+.footer-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 183, 194, 0.4);
+}
+
+/* Loading and Error States */
+.loading, .error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-size: 24px;
+    color: #f5f5f5;
+    text-align: center;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Aura Guide Button */
+.aura-guide-button {
+    position: fixed;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    padding: 25px 0;
+    background: linear-gradient(to right, #00b7c2, #4ecdc4);
+    color: white;
+    border: none;
+    font-size: 70px !important;
+    font-family: 'Sansation', 'Sansation_Regular';
+    font-weight: bold !important;
+    text-transform: uppercase !important;
+    letter-spacing: 2px !important;
+    cursor: pointer;
+    z-index: 990;
+    text-align: center;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 !important;
+    min-width: 1100px !important;
+    min-height: 200px;
+    border-radius: 30px !important;
+
+    box-shadow: 0 4px 12px rgba(0, 183, 194, 0.4) !important;
+}
+
+.aura-guide-button:hover {
+    background: linear-gradient(to right, #00a6b0, #3dbcb4);
+    transform: translateX(-50%) translateY(-3px) !important;
+    box-shadow: 0 6px 16px rgba(0, 183, 194, 0.5) !important;
+}
+
+/* Nearby Auras Widget */
+.nearby-auras-widget {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 0px !important;
+    padding: 30px !important;
+    min-height: auto; /* Allow height to adapt to content */
+}
+
+.nearby-auras-widget h2 {
+    font-size: 55px;
+    margin-bottom: 30px;
+}
+
+.nearby-auras-container {
+    display: flex;
+    flex-wrap: nowrap; /* Prevent wrapping */
+    gap: 20px;
+    margin-top: 30px;
+    width: 100%;
+    overflow-x: auto; /* Enable horizontal scrolling */
+    padding-bottom: 16px; /* Add padding for scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: #00b7c2 #2a2a2a;
+}
+
+/* Styling for WebKit browsers (Chrome, Safari) */
+.nearby-auras-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.nearby-auras-container::-webkit-scrollbar-track {
+    background: #2a2a2a;
+    border-radius: 4px;
+}
+
+.nearby-auras-container::-webkit-scrollbar-thumb {
+    background: #00b7c2;
+    border-radius: 4px;
+}
+
+.nearby-auras-container::-webkit-scrollbar-thumb:hover {
+    background: #4ecdc4;
+}
+
+.nearby-aura-card {
+    flex: 0 0 auto; /* Don't grow, don't shrink, use auto basis */
+    width: 420px; /* Fixed width */
+    padding: 22px;
+    border-radius: 16px;
+    background-color: #2a2a2a !important;
+    border: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.nearby-aura-card:hover {
+    background-color: #333 !important;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border: 1px solid #444;
+}
+
+.nearby-aura-card:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.nearby-aura-content {
+    flex: 1;
+    position: relative;
+    z-index: 1;
+}
+
+.nearby-aura-content h3 {
+    margin: 0;
+    font-size: 40px;
+    color: #f5f5f5 !important;
+    
+}
+
+.nearby-aura-details {
+    display: flex;
+    justify-content: flex-start;
+    margin: 8px 0 0 0;
+    font-size: 30px;
+    color: #aaa;
+}
+
+.aura-distance {
+    color: #4ecdc4;
+    font-weight: 600;
+}
+
+.nearby-aura-placeholder {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    margin-left: 16px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.refresh-nearby-btn {
+    background: linear-gradient(to right, #00b7c2, #4ecdc4);
+    color: white;
+    border: none;
+    border-radius: 28px;
+    padding: 16px 30px;
+    font-size: 32px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+    box-shadow: 0 4px 8px rgba(0, 183, 194, 0.3);
+    display: inline-block;
+}
+
+.refresh-nearby-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 183, 194, 0.4);
+}
+
+/* Responsive styles for nearby auras */
+@media (max-width: 768px) {
+    .nearby-aura-card {
+        flex-basis: 100%;
+    }
+}
+
+/* Nearby Auras Loading and Empty States */
+.loading-container {
+    text-align: center;
+    padding: 20px;
+    color: #aaa;
+    font-size: 32px;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+.empty-auras {
+    text-align: center;
+    padding: 20px;
+    color: #aaa;
+    font-size: 32px;
+    font-weight: 500;
+    background-color: #2a2a2a;
+    border-radius: 14px;
+    border: 1px solid #333;
+    margin-bottom: 16px;
 } 
