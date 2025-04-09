@@ -55,7 +55,7 @@
 }
 
 .edit-button {
-  background: linear-gradient(to right, #00b7c2, #4ecdc4);
+  background: linear-gradient(125deg, #00b7c2, #4ecdc4);
   color: white;
   border: none;
   border-radius: 30px;
@@ -120,7 +120,7 @@
 }
 
 .save-name-button {
-  background: linear-gradient(to right, #00b7c2, #4ecdc4);
+  background: linear-gradient(45deg, #00b7c2, #4ecdc4);
   color: white;
   border: none;
   border-radius: 12px;

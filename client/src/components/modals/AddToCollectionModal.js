@@ -141,7 +141,7 @@ const AddToCollectionModal = ({
                   <div className="collections-list">
                     {collections.map(collection => {
                       // Default aura color for the collection
-                      let auraColor = collection.aura_color || 'linear-gradient(to right, #6d4aff, #9e8aff)';
+                      let auraColor = collection.aura_color || 'linear-gradient(125deg, #6d4aff, #9e8aff)';
                       
                       // Extract aura color from the first location if available
                       if (collection.locations && collection.locations.length > 0) {
@@ -149,7 +149,7 @@ const AddToCollectionModal = ({
                           
                           // Method 1: Check for aura_color1 and aura_color2
                           if (firstLocation.aura_color1 && firstLocation.aura_color2) {
-                              auraColor = `linear-gradient(to right, ${firstLocation.aura_color1}, ${firstLocation.aura_color2})`;
+                              auraColor = `linear-gradient(125deg, ${firstLocation.aura_color1}, ${firstLocation.aura_color2})`;
                           }
                           // Method 2: Check for gradient string in aura_color
                           else if (firstLocation.aura_color) {
@@ -161,16 +161,16 @@ const AddToCollectionModal = ({
                               else {
                                   const colors = firstLocation.aura_color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
                                   if (colors && colors.length >= 2) {
-                                      auraColor = `linear-gradient(to right, ${colors[0]}, ${colors[1]})`;
+                                      auraColor = `linear-gradient(125deg, ${colors[0]}, ${colors[1]})`;
                                   } else if (colors && colors.length === 1) {
-                                      auraColor = `linear-gradient(to right, ${colors[0]}, ${colors[0]})`;
+                                      auraColor = `linear-gradient(125deg, ${colors[0]}, ${colors[0]})`;
                                   }
                               }
                           }
                           // Method 3: Check for aura object
                           else if (firstLocation.aura) {
                               if (firstLocation.aura.color1 && firstLocation.aura.color2) {
-                                  auraColor = `linear-gradient(to right, ${firstLocation.aura.color1}, ${firstLocation.aura.color2})`;
+                                  auraColor = `linear-gradient(45deg, ${firstLocation.aura.color1}, ${firstLocation.aura.color2})`;
                               } else if (firstLocation.aura.color) {
                                   // If it's already a gradient string, use it directly
                                   if (firstLocation.aura.color.includes('gradient')) {
@@ -180,9 +180,9 @@ const AddToCollectionModal = ({
                                   else {
                                       const colors = firstLocation.aura.color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
                                       if (colors && colors.length >= 2) {
-                                          auraColor = `linear-gradient(to right, ${colors[0]}, ${colors[1]})`;
+                                          auraColor = `linear-gradient(45deg, ${colors[0]}, ${colors[1]})`;
                                       } else if (colors && colors.length === 1) {
-                                          auraColor = `linear-gradient(to right, ${colors[0]}, ${colors[0]})`;
+                                          auraColor = `linear-gradient(45deg, ${colors[0]}, ${colors[0]})`;
                                       }
                                   }
                               }

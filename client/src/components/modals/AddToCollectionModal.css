@@ -155,7 +155,7 @@
   padding: 30px;
   border: none;
   border-radius: 35px;
-  background: linear-gradient(to right, #00b7c2, #4ecdc4);
+  background: linear-gradient(125deg, #00b7c2, #4ecdc4);
   color: white;
   font-size: 2.8rem;
   font-weight: 600;
@@ -218,7 +218,7 @@
 
 .add-button {
   padding: 24px 40px;
-  background: linear-gradient(to right, #00b7c2, #4ecdc4);
+  background: linear-gradient(45deg, #00b7c2, #4ecdc4);
   border: none;
   border-radius: 35px;
   color: white;

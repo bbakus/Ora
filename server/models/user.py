@@ -20,6 +20,11 @@ class User(BaseModel):
     aura_shape = db.Column(db.String(20))  # Shape of their aura
     response_speed = db.Column(db.String(20))  # Speed of response for animations
     
+    # Individual aura color components for easier frontend use
+    aura_color1 = db.Column(db.String(20))  # First color in gradient
+    aura_color2 = db.Column(db.String(20))  # Second color in gradient
+    aura_color3 = db.Column(db.String(20))  # Third color in gradient
+    
     # Relationships
     reviews = db.relationship('Review', back_populates='user')
     collections = db.relationship('Collection', back_populates='user')
@@ -70,6 +75,9 @@ class User(BaseModel):
                 'aura_color': self.aura_color or None,
                 'aura_shape': self.aura_shape or None,
                 'response_speed': self.response_speed or None,
+                'aura_color1': self.aura_color1 or None,
+                'aura_color2': self.aura_color2 or None,
+                'aura_color3': self.aura_color3 or None,
                 'created_at': self.created_at.isoformat() if self.created_at else None,
                 'updated_at': self.updated_at.isoformat() if self.updated_at else None,
                 'reviews': [review.to_dict() for review in self.reviews] if self.reviews else [],

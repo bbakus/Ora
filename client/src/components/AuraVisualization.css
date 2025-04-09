@@ -567,7 +567,7 @@
     animation-duration: 3s !important;
 }
 
-/* Medium responses - slightly adjusted from default */
+/* Medium responses - adjusted for consistent medium speed */
 .speed-medium .sparkle {
     animation-duration: 2s !important;
 }
@@ -588,6 +588,16 @@
 
 .speed-medium .balanced-glow-inner {
     animation-duration: 6s !important;
+}
+
+/* Add a medium pulse animation */
+@keyframes medium-pulse {
+    0% {
+        filter: drop-shadow(0 0 12px rgba(200, 200, 255, 0.7));
+    }
+    100% {
+        filter: drop-shadow(0 0 20px rgba(200, 200, 255, 0.8));
+    }
 }
 
 /* Medium-slow responses */

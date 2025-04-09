@@ -20,6 +20,7 @@ import DiscoverScreen from './components/screens/DiscoverScreen';
 import CollectionsScreen from './components/screens/CollectionsScreen';
 import AboutAurasScreen from './components/screens/AboutAurasScreen';
 import AuraGuideScreen from './components/screens/AuraGuideScreen';
+import DailyMoodQuestionnaire from './components/screens/DailyMood/DailyMoodQuestionnaire';
 
 import { loadSansationFont } from './components/utils/FontLoader';
 
@@ -32,6 +33,36 @@ function App() {
     // Load fonts immediately
     loadSansationFont();
   
+  }, []);
+
+  // Force medium animation speed for any existing user data
+  useEffect(() => {
+    // Fix localStorage if it exists
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        
+        // Log aura color data for debugging
+        console.log("USER AURA DATA:", {
+          aura_color: userData.aura_color,
+          aura_shape: userData.aura_shape,
+          aura_color1: userData.aura_color1,
+          aura_color2: userData.aura_color2, 
+          aura_color3: userData.aura_color3,
+          has3Colors: userData.aura_color && userData.aura_color.includes('gradient') && 
+                      userData.aura_color.match(/#[0-9A-Fa-f]{6}/g)?.length === 3
+        });
+        
+        // Force response_speed to 'medium'
+        userData.response_speed = 'medium';
+        // Update localStorage
+        localStorage.setItem('user', JSON.stringify(userData));
+        console.log('FORCED USER ANIMATION SPEED TO MEDIUM');
+      }
+    } catch (error) {
+      console.error('Error fixing animation speed:', error);
+    }
   }, []);
 
   return (
@@ -54,6 +85,7 @@ function App() {
               <Route path="/signup" element={<SignupScreen />} />
               <Route path="/auth/:userId/dashboard" element={<DashboardScreen />} />
               <Route path="/auth/:userId/questionnaire" element={<AuraQuestionnaire/>} />
+              <Route path="/auth/:userId/daily-mood" element={<DailyMoodQuestionnaire />} />
               
               {/* Main App */}
               <Route path="/discover" element={<DiscoverScreen />} />

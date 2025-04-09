@@ -219,9 +219,9 @@ const CollectionLocationsModal = ({ isOpen, onClose, collection, onLocationClick
               let auraStyle = {};
               
               if (location.aura_color1 && location.aura_color2) {
-                auraStyle.background = `linear-gradient(to right, ${location.aura_color1}, ${location.aura_color2})`;
+                auraStyle.background = `linear-gradient(125deg, ${location.aura_color1}, ${location.aura_color2})`;
               } else if (location.aura?.color1 && location.aura?.color2) {
-                auraStyle.background = `linear-gradient(to right, ${location.aura.color1}, ${location.aura.color2})`;
+                auraStyle.background = `linear-gradient(125deg, ${location.aura.color1}, ${location.aura.color2})`;
               } else if (location.aura_color) {
                 // Try to extract colors from aura_color string
                 if (location.aura_color.includes('gradient')) {
@@ -231,12 +231,12 @@ const CollectionLocationsModal = ({ isOpen, onClose, collection, onLocationClick
                   // Try to extract hex colors
                   const colors = location.aura_color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
                   if (colors && colors.length >= 2) {
-                    auraStyle.background = `linear-gradient(to right, ${colors[0]}, ${colors[1]})`;
+                    auraStyle.background = `linear-gradient(125deg, ${colors[0]}, ${colors[1]})`;
                   } else if (colors && colors.length === 1) {
-                    auraStyle.background = `linear-gradient(to right, ${colors[0]}, ${colors[0]})`;
+                    auraStyle.background = `linear-gradient(125deg, ${colors[0]}, ${colors[0]})`;
                   } else {
                     // Fallback to a default gradient
-                    auraStyle.background = `linear-gradient(to right, #6d4aff, #9e8aff)`;
+                    auraStyle.background = `linear-gradient(125deg, #6d4aff, #9e8aff)`;
                   }
                 }
               } else if (location.aura?.color) {
@@ -248,17 +248,17 @@ const CollectionLocationsModal = ({ isOpen, onClose, collection, onLocationClick
                   // Try to extract hex colors
                   const colors = location.aura.color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
                   if (colors && colors.length >= 2) {
-                    auraStyle.background = `linear-gradient(to right, ${colors[0]}, ${colors[1]})`;
+                    auraStyle.background = `linear-gradient(45deg, ${colors[0]}, ${colors[1]})`;
                   } else if (colors && colors.length === 1) {
-                    auraStyle.background = `linear-gradient(to right, ${colors[0]}, ${colors[0]})`;
+                    auraStyle.background = `linear-gradient(45deg, ${colors[0]}, ${colors[0]})`;
                   } else {
                     // Fallback to a default gradient
-                    auraStyle.background = `linear-gradient(to right, #6d4aff, #9e8aff)`;
+                    auraStyle.background = `linear-gradient(45deg, #6d4aff, #9e8aff)`;
                   }
                 }
               } else {
                 // Default gradient if no aura data found
-                auraStyle.background = `linear-gradient(to right, #6d4aff, #9e8aff)`;
+                auraStyle.background = `linear-gradient(45deg, #6d4aff, #9e8aff)`;
               }
               
               return (

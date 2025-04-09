@@ -6,8 +6,14 @@ const AuraVisualization = ({ auraColor, auraShape, responseSpeed }) => {
     const animationRef = useRef(null);
     const animationTimeRef = useRef(0);
 
+    // FORCE MEDIUM SPEED NO MATTER WHAT
+    const getSpeedMultiplier = () => {
+        // Always return medium speed (1.0) regardless of prop
+        return 1.0;
+    };
+
     useEffect(() => {
-        console.log('Props changed:', { auraColor, auraShape, responseSpeed });
+        console.log('Props changed:', { auraColor, auraShape, responseSpeed: 'medium' });
         
         // Check if canvas exists before proceeding
         if (!canvasRef.current) {
@@ -27,6 +33,9 @@ const AuraVisualization = ({ auraColor, auraShape, responseSpeed }) => {
             cancelAnimationFrame(animationRef.current);
         }
         
+        // Reset animation time when props change
+        animationTimeRef.current = 0;
+        
         // Start new animation
         startAnimation();
         
@@ -35,7 +44,7 @@ const AuraVisualization = ({ auraColor, auraShape, responseSpeed }) => {
                 cancelAnimationFrame(animationRef.current);
             }
         };
-    }, [auraColor, responseSpeed]);
+    }, [auraColor, auraShape]);
 
     const startAnimation = () => {
         // Check if canvas exists before proceeding
@@ -54,8 +63,10 @@ const AuraVisualization = ({ auraColor, auraShape, responseSpeed }) => {
                 return;
             }
             
-            // Increment animation time - slightly faster now
-            animationTimeRef.current += 0.01;
+            // Apply speed multiplier to animation increment
+            const speedMultiplier = getSpeedMultiplier();
+            animationTimeRef.current += 0.01 * speedMultiplier;
+            
             drawAura(ctx);
             animationRef.current = requestAnimationFrame(animate);
         };
@@ -85,12 +96,16 @@ const AuraVisualization = ({ auraColor, auraShape, responseSpeed }) => {
         // Extract colors from gradient string
         const colors = auraColor.match(/#[0-9a-f]{6}/gi) || ['#ffffff'];
         
+        // Get speed multiplier for period calculation
+        const speedMultiplier = getSpeedMultiplier();
+        
         // Create animated diagonal gradient
-        const period = 8; // Slightly faster animation cycle (8 seconds)
+        // Adjust period by speed multiplier (faster speed = shorter period)
+        const period = 8 / speedMultiplier; 
         
         // Use sine wave for smooth oscillation instead of resetting
         const oscillation = Math.sin(animationTimeRef.current / period * Math.PI * 2);
-        const progress = (oscillation + 1) / 2; // Convert from -1 to 1 range to 0 to 1 range
+        const progress = (oscillation + 1) / 2; // Convert from -1 to 1 range to a 0 to 1 range
         
         // Calculate gradient angle (45 degrees)
         const angle = Math.PI / 4;
@@ -126,8 +141,11 @@ const AuraVisualization = ({ auraColor, auraShape, responseSpeed }) => {
         ctx.fill();
     };
 
+    // Add responseSpeed to the class for CSS animations - ALWAYS USE MEDIUM
+    const speedClass = 'speed-medium';
+
     return (
-        <div className="aura-container">
+        <div className={`aura-container ${speedClass}`}>
             <div className="aura-circle">
                 <canvas
                     ref={canvasRef}

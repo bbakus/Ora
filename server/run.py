@@ -1,4 +1,10 @@
-from app import create_app
+import sys
+import os
+
+# Add parent directory to Python path to make 'server' a recognized module
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from server.app import create_app
 
 app = create_app()
 

@@ -84,7 +84,7 @@
   padding: 12px 20px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(to right, #00b7c2, #4ecdc4);
+  background: linear-gradient(125deg, #00b7c2, #4ecdc4);
   color: white;
   font-weight: 600;
   cursor: pointer;
@@ -163,7 +163,7 @@
   padding: 8px 16px;
   border: none;
   border-radius: 20px;
-  background: linear-gradient(to right, #00b7c2, #4ecdc4);
+  background: linear-gradient(45deg, #00b7c2, #4ecdc4);
   color: white;
   font-weight: 500;
   cursor: pointer;
@@ -177,7 +177,7 @@
 }
 
 .send-request-button.sent {
-  background: linear-gradient(to right, #4CAF50, #81C784);
+  background: linear-gradient(45deg, #4CAF50, #81C784);
   cursor: default;
 }
 

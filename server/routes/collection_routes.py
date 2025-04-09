@@ -233,7 +233,61 @@ class CollectionAddLocation(Resource):
         collection.locations.append(location)
         db.session.commit()
         
-        return collection.to_dict(), 200
+        # Get the updated collection with locations
+        collection_data = collection.to_dict(include_locations=True)
+        
+        # Add the first location's aura to the collection if available
+        if collection_data['locations']:
+            first_location = collection_data['locations'][0]
+            
+            # Process all locations
+            for i, location in enumerate(collection_data['locations']):
+                # Check if location has aura data in the aura object
+                if 'aura' in location and location['aura']:
+                    aura = location['aura']
+                    
+                    # If aura has a color field that includes a gradient
+                    if 'color' in aura and aura['color'] and 'gradient' in aura['color']:
+                        # Extract hex colors from gradient
+                        import re
+                        color_matches = re.findall(r'#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}', aura['color'])
+                        if len(color_matches) >= 3:
+                            collection_data['locations'][i]['aura_color1'] = color_matches[0]
+                            collection_data['locations'][i]['aura_color2'] = color_matches[1]
+                            collection_data['locations'][i]['aura_color3'] = color_matches[2]
+                            
+                            # If this is the first location, also set it on the collection
+                            if i == 0:
+                                collection_data['aura_color1'] = color_matches[0]
+                                collection_data['aura_color2'] = color_matches[1]
+                                collection_data['aura_color3'] = color_matches[2]
+                                collection_data['aura_color'] = aura.get('color', '')
+                        elif len(color_matches) >= 2:
+                            collection_data['locations'][i]['aura_color1'] = color_matches[0]
+                            collection_data['locations'][i]['aura_color2'] = color_matches[1]
+                            collection_data['locations'][i]['aura_color3'] = color_matches[1]  # Duplicate the second color as fallback
+                            
+                            # If this is the first location, also set it on the collection
+                            if i == 0:
+                                collection_data['aura_color1'] = color_matches[0]
+                                collection_data['aura_color2'] = color_matches[1]
+                                collection_data['aura_color3'] = color_matches[1]  # Duplicate the second color as fallback
+                                collection_data['aura_color'] = aura.get('color', '')
+                    
+                    # Set raw aura color for fallback
+                    collection_data['locations'][i]['aura_color'] = aura.get('color', '')
+            
+            # If we didn't get aura colors from the first location's aura object, 
+            # check if the first location itself has the aura colors set
+            if first_location.get('aura_color1') and first_location.get('aura_color2') and not collection_data.get('aura_color1'):
+                collection_data['aura_color1'] = first_location['aura_color1']
+                collection_data['aura_color2'] = first_location['aura_color2']
+                collection_data['aura_color3'] = first_location.get('aura_color3', first_location['aura_color2'])  # Use aura_color3 if available, otherwise fallback to color2
+            
+            if first_location.get('aura_color') and not collection_data.get('aura_color'):
+                collection_data['aura_color'] = first_location['aura_color']
+        
+        return collection_data, 200
 
 class CollectionRemoveLocation(Resource):
     """Resource for removing locations from collections"""
@@ -275,14 +329,27 @@ class CollectionRemoveLocation(Resource):
                         # Extract hex colors from gradient
                         import re
                         color_matches = re.findall(r'#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}', aura['color'])
-                        if len(color_matches) >= 2:
+                        if len(color_matches) >= 3:
                             collection_data['locations'][i]['aura_color1'] = color_matches[0]
                             collection_data['locations'][i]['aura_color2'] = color_matches[1]
+                            collection_data['locations'][i]['aura_color3'] = color_matches[2]
                             
                             # If this is the first location, also set it on the collection
                             if i == 0:
                                 collection_data['aura_color1'] = color_matches[0]
                                 collection_data['aura_color2'] = color_matches[1]
+                                collection_data['aura_color3'] = color_matches[2]
+                                collection_data['aura_color'] = aura.get('color', '')
+                        elif len(color_matches) >= 2:
+                            collection_data['locations'][i]['aura_color1'] = color_matches[0]
+                            collection_data['locations'][i]['aura_color2'] = color_matches[1]
+                            collection_data['locations'][i]['aura_color3'] = color_matches[1]  # Duplicate the second color as fallback
+                            
+                            # If this is the first location, also set it on the collection
+                            if i == 0:
+                                collection_data['aura_color1'] = color_matches[0]
+                                collection_data['aura_color2'] = color_matches[1]
+                                collection_data['aura_color3'] = color_matches[1]  # Duplicate the second color as fallback
                                 collection_data['aura_color'] = aura.get('color', '')
                     
                     # Set raw aura color for fallback
@@ -293,6 +360,7 @@ class CollectionRemoveLocation(Resource):
             if first_location.get('aura_color1') and first_location.get('aura_color2') and not collection_data.get('aura_color1'):
                 collection_data['aura_color1'] = first_location['aura_color1']
                 collection_data['aura_color2'] = first_location['aura_color2']
+                collection_data['aura_color3'] = first_location.get('aura_color3', first_location['aura_color2'])  # Use aura_color3 if available, otherwise fallback to color2
             
             if first_location.get('aura_color') and not collection_data.get('aura_color'):
                 collection_data['aura_color'] = first_location['aura_color']
@@ -324,14 +392,27 @@ class SingleCollection(Resource):
                         # Extract hex colors from gradient
                         import re
                         color_matches = re.findall(r'#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}', aura['color'])
-                        if len(color_matches) >= 2:
+                        if len(color_matches) >= 3:
                             collection_data['locations'][i]['aura_color1'] = color_matches[0]
                             collection_data['locations'][i]['aura_color2'] = color_matches[1]
+                            collection_data['locations'][i]['aura_color3'] = color_matches[2]
                             
                             # If this is the first location, also set it on the collection
                             if i == 0:
                                 collection_data['aura_color1'] = color_matches[0]
                                 collection_data['aura_color2'] = color_matches[1]
+                                collection_data['aura_color3'] = color_matches[2]
+                                collection_data['aura_color'] = aura.get('color', '')
+                        elif len(color_matches) >= 2:
+                            collection_data['locations'][i]['aura_color1'] = color_matches[0]
+                            collection_data['locations'][i]['aura_color2'] = color_matches[1]
+                            collection_data['locations'][i]['aura_color3'] = color_matches[1]  # Duplicate the second color as fallback
+                            
+                            # If this is the first location, also set it on the collection
+                            if i == 0:
+                                collection_data['aura_color1'] = color_matches[0]
+                                collection_data['aura_color2'] = color_matches[1]
+                                collection_data['aura_color3'] = color_matches[1]  # Duplicate the second color as fallback
                                 collection_data['aura_color'] = aura.get('color', '')
                     
                     # Set raw aura color for fallback
@@ -342,6 +423,7 @@ class SingleCollection(Resource):
             if first_location.get('aura_color1') and first_location.get('aura_color2') and not collection_data.get('aura_color1'):
                 collection_data['aura_color1'] = first_location['aura_color1']
                 collection_data['aura_color2'] = first_location['aura_color2']
+                collection_data['aura_color3'] = first_location.get('aura_color3', first_location['aura_color2'])  # Use aura_color3 if available, otherwise fallback to color2
             
             if first_location.get('aura_color') and not collection_data.get('aura_color'):
                 collection_data['aura_color'] = first_location['aura_color']

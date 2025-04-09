@@ -183,8 +183,12 @@ function DiscoverScreen() {
   // Add state for highlighted location (after modal closes)
   const [highlightedLocationId, setHighlightedLocationId] = useState(null);
 
+  // Add a new state variable for aura matching toggle
+  const [auraMatchEnabled, setAuraMatchEnabled] = useState(false);
+
   // Define common place types for filtering
   const placeTypes = [
+    // Remove aura_match from the regular filter types
     { id: 'restaurant', label: 'Restaurants', icon: 'restaurant_menu' },
     { id: 'cafe', label: 'Cafes', icon: 'local_cafe' },
     { id: 'bar', label: 'Bars', icon: 'local_bar' },
@@ -905,6 +909,150 @@ function DiscoverScreen() {
     }
   };
 
+  // Extract all colors from gradients (up to 3 colors)
+  const extractColors = (colorStr) => {
+    if (!colorStr) return ['#000000'];
+    
+    // For gradient strings, extract all hex colors
+    if (colorStr.includes('gradient')) {
+      // Try to extract all hex color codes
+      const hexMatches = colorStr.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g) || [];
+      
+      // If we found hex colors, return them
+      if (hexMatches.length > 0) {
+        console.log(`Extracted ${hexMatches.length} hex colors from gradient:`, hexMatches);
+        return hexMatches;
+      }
+      
+      // If no hex colors found, try parsing from linear-gradient format
+      // Format like: "linear-gradient(to right, #6d4aff, #9e8aff)"
+      // or "linear-gradient(45deg, COLOR1, COLOR2, COLOR3)"
+      try {
+        const parts = colorStr.split(',');
+        // Remove the "linear-gradient(...)" part and extract just colors
+        const colors = parts.slice(1).map(part => {
+          // Clean up the color string and extract just the color
+          const cleaned = part.trim().replace(')', '');
+          // Only return if it looks like a color (starts with # or rgb)
+          if (cleaned.startsWith('#') || cleaned.startsWith('rgb')) {
+            return cleaned;
+          }
+          // Try to extract hex color if embedded
+          const hexMatch = cleaned.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/);
+          if (hexMatch) {
+            return hexMatch[0];
+          }
+          return null;
+        }).filter(Boolean); // Remove null values
+        
+        if (colors.length > 0) {
+          console.log(`Extracted ${colors.length} colors from gradient parts:`, colors);
+          return colors;
+        }
+      } catch (e) {
+        console.error("Error parsing gradient colors:", e);
+      }
+      
+      // Last resort: try to extract rgb() or rgba() values
+      try {
+        const rgbMatches = colorStr.match(/rgb\([^)]+\)|rgba\([^)]+\)/g) || [];
+        if (rgbMatches.length > 0) {
+          console.log(`Extracted ${rgbMatches.length} RGB colors:`, rgbMatches);
+          return rgbMatches;
+        }
+      } catch (e) {
+        console.error("Error extracting RGB values:", e);
+      }
+      
+      console.warn("Could not extract colors from gradient:", colorStr);
+      return ['#000000']; // Default fallback
+    }
+    
+    // Handle CSS named colors by converting to hex
+    if (colorStr.match(/^[a-z]+$/i)) {
+      // This is a simple check for named colors like "red", "blue", etc.
+      // In a real app, you'd have a mapping of CSS color names to hex values
+      console.log("Named color detected:", colorStr);
+      return [colorStr]; // Return as is, parseHex will need to handle named colors
+    }
+    
+    // For single colors, return as array
+    return [colorStr];
+  };
+
+  // Helper function to calculate color similarity (0-1 range where 1 is identical)
+  const calculateColorSimilarity = (color1, color2) => {
+    // Handle missing colors
+    if (!color1 || !color2) return 0;
+    
+    try {
+      // Calculate Euclidean distance between colors
+      const colorDiff = Math.sqrt(
+        Math.pow(color1.r - color2.r, 2) +
+        Math.pow(color1.g - color2.g, 2) +
+        Math.pow(color1.b - color2.b, 2)
+      );
+      
+      // Normalize to 0-1 range (255*sqrt(3) is max possible difference)
+      const maxDiff = Math.sqrt(3 * Math.pow(255, 2));
+      return 1 - (colorDiff / maxDiff);
+    } catch (e) {
+      console.error("Error calculating color similarity:", e);
+      return 0;
+    }
+  };
+  
+  // Convert hex or other color formats to RGB
+  const parseHex = (hex) => {
+    if (!hex) return { r: 0, g: 0, b: 0 };
+    
+    // Handle named CSS colors - simplified mapping of common ones
+    // In a full app, you'd use a complete mapping
+    const colorMap = {
+      'red': {r: 255, g: 0, b: 0},
+      'green': {r: 0, g: 128, b: 0},
+      'blue': {r: 0, g: 0, b: 255},
+      'yellow': {r: 255, g: 255, b: 0},
+      'purple': {r: 128, g: 0, b: 128},
+      'black': {r: 0, g: 0, b: 0},
+      'white': {r: 255, g: 255, b: 255},
+      'gray': {r: 128, g: 128, b: 128},
+      'orange': {r: 255, g: 165, b: 0},
+      'pink': {r: 255, g: 192, b: 203}
+    };
+    
+    if (typeof hex === 'string' && hex.toLowerCase() in colorMap) {
+      return colorMap[hex.toLowerCase()];
+    }
+    
+    // If not a string, or doesn't match patterns, return default
+    if (typeof hex !== 'string' || (!hex.startsWith('#') && !hex.match(/^[0-9A-Fa-f]{6}$/))) {
+      console.warn("Invalid color format:", hex);
+      return { r: 0, g: 0, b: 0 };
+    }
+    
+    // Handle hex format
+    // Remove # if present
+    hex = hex.replace('#', '');
+    
+    // Handle both 3-digit and 6-digit formats
+    if (hex.length === 3) {
+      hex = hex.split('').map(char => char + char).join('');
+    }
+    
+    // Validate hex format
+    if (!hex.match(/^[0-9A-Fa-f]{6}$/)) {
+      console.warn("Invalid hex format:", hex);
+      return { r: 0, g: 0, b: 0 };
+    }
+    
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    
+    return { r, g, b };
+  };
+
   // Center map on user's current location at ~500m view (approx. zoom level 16.5)
   const handleCenterOnUser = () => {
     console.log("CENTER ON USER CLICKED - Current location:", currentLocation);
@@ -924,35 +1072,314 @@ function DiscoverScreen() {
 
   // Get filtered locations based on current filters and view bounds
   const getFilteredLocations = useCallback(() => {
-    if (!locations.length) return [];
+    // Early return if no locations or if component is unmounting
+    if (!locations || locations.length === 0) return [];
     
-    // Base filter by selected type
-    let filteredByType = locations;
+    // Base locations to filter from
+    let filteredLocations = locations;
+    
+    // Apply category filter if active
     if (activeFilter) {
-      filteredByType = locations.filter(location => {
+      // Regular place type filter
+      filteredLocations = locations.filter(location => {
         const placeType = (location.place_type || '').toLowerCase();
         return placeType.includes(activeFilter.toLowerCase());
       });
     }
     
+    // Apply aura matching if enabled
+    if (auraMatchEnabled && userData && userData.aura_color) {
+      console.log("AURA MATCH FILTER ACTIVATED - Finding matching auras");
+      
+      // Pre-process the user aura once outside the loop
+      const userAura = {
+        color: userData.aura_color,
+        shape: userData.aura_shape || 'flowing'
+      };
+      
+      // Extract user's aura colors
+      const userColors = extractColors(userAura.color);
+      console.log(`User has ${userColors.length} aura colors:`, userColors);
+      
+      // Convert user colors to RGB for matching
+      const userRgbColors = userColors.map(parseHex);
+      
+      // Result array - process locations that passed the first filter
+      const matchingLocations = [];
+      
+      // Define the match threshold for all color comparisons
+      const MATCH_THRESHOLD = 0.25; // Very permissive threshold for individual matches
+      
+      console.log(`Checking ${filteredLocations.length} locations for aura matches...`);
+      console.log(`User colors:`, userColors);
+      
+      const matchLog = []; // For logging match details
+      
+      for (const location of filteredLocations) {
+        // Skip invalid locations
+        if (!location.latitude || !location.longitude) continue;
+        
+        // Extract location colors
+        const locationColors = [];
+        
+        // First priority: check for individual color components
+        if (location.aura_color1) locationColors.push(location.aura_color1);
+        if (location.aura_color2) locationColors.push(location.aura_color2);
+        if (location.aura_color3) locationColors.push(location.aura_color3);
+        
+        // Second priority: try to extract from aura_color gradient
+        if (locationColors.length === 0 && location.aura_color) {
+          const extractedColors = extractColors(location.aura_color);
+          locationColors.push(...extractedColors);
+        }
+        
+        // Third priority: try colors from aura object if present
+        if (locationColors.length === 0 && location.aura) {
+          if (location.aura.color1) locationColors.push(location.aura.color1);
+          if (location.aura.color2) locationColors.push(location.aura.color2);
+          if (location.aura.color3) locationColors.push(location.aura.color3);
+          
+          if (locationColors.length === 0 && location.aura.color) {
+            locationColors.push(...extractColors(location.aura.color));
+          }
+        }
+        
+        // Skip locations with no colors
+        if (locationColors.length === 0) continue;
+        
+        // Convert location colors to RGB for accurate comparison
+        const locationRgbColors = locationColors.map(parseHex);
+        
+        console.log(`Location: ${location.name}, colors:`, locationColors);
+        
+        // Create a complete matrix of all possible color combinations
+        const allPossibleCombinations = [];
+        
+        // Specifically track color matches by color name for debugging
+        // This will help us see if red colors are being matched
+        const colorTypeMatches = {
+          red: 0,
+          orange: 0,
+          yellow: 0,
+          green: 0,
+          blue: 0,
+          cyan: 0,
+          purple: 0
+        };
+        
+        // Track all matched combinations between user and location
+        for (let i = 0; i < userRgbColors.length; i++) {
+          for (let j = 0; j < locationRgbColors.length; j++) {
+            const similarity = calculateColorSimilarity(userRgbColors[i], locationRgbColors[j]);
+            
+            // Analyze what type of color this is to track matches by color
+            const userHex = userColors[i].toLowerCase();
+            let userColorType = 'other';
+            
+            // Simplistic color classification based on hex value
+            if (userHex.includes('ff0000') || (userRgbColors[i].r > 200 && userRgbColors[i].g < 100 && userRgbColors[i].b < 100)) {
+              userColorType = 'red';
+            } else if (userHex.includes('ffa500') || (userRgbColors[i].r > 200 && userRgbColors[i].g > 100 && userRgbColors[i].b < 100)) {
+              userColorType = 'orange';
+            } else if (userHex.includes('00ffff') || (userRgbColors[i].r < 100 && userRgbColors[i].g > 200 && userRgbColors[i].b > 200)) {
+              userColorType = 'cyan';
+            }
+            
+            // Is this a match?
+            const isMatch = similarity >= MATCH_THRESHOLD;
+            
+            // If it's a match, increment the color type counter
+            if (isMatch && userColorType in colorTypeMatches) {
+              colorTypeMatches[userColorType]++;
+            }
+            
+            // Store this combination
+            allPossibleCombinations.push({
+              userIndex: i,
+              locationIndex: j,
+              userColorHex: userColors[i],
+              locationColorHex: locationColors[j],
+              userColorType,
+              similarity,
+              isMatch
+            });
+          }
+        }
+        
+        // Sort by similarity (highest first)
+        allPossibleCombinations.sort((a, b) => b.similarity - a.similarity);
+        
+        // Now calculate our match metrics
+        
+        // 1. Count how many matches we have for each user color
+        const userColorMatches = {};
+        for (let i = 0; i < userColors.length; i++) {
+          userColorMatches[i] = allPossibleCombinations
+            .filter(c => c.userIndex === i && c.isMatch)
+            .length;
+        }
+        
+        // 2. Count how many matches we have for each location color
+        const locationColorMatches = {};
+        for (let j = 0; j < locationColors.length; j++) {
+          locationColorMatches[j] = allPossibleCombinations
+            .filter(c => c.locationIndex === j && c.isMatch)
+            .length;
+        }
+        
+        // 3. Count the total number of matches
+        const totalMatches = allPossibleCombinations.filter(c => c.isMatch).length;
+        
+        // 4. Count distinct color types that have matches (red, cyan, etc.)
+        const matchingColorTypes = Object.entries(colorTypeMatches)
+          .filter(([, count]) => count > 0)
+          .map(([type]) => type);
+        
+        // Get the top 4 best matches
+        const topMatches = allPossibleCombinations.slice(0, 4);
+        
+        // Calculate the average similarity of the top 4 matches
+        const topMatchAverage = topMatches.reduce((sum, c) => sum + c.similarity, 0) / 
+                                Math.min(topMatches.length, 4);
+        
+        // Determine if this location has enough matches to be included
+        // An "enough match" means:
+        // 1. At least 2 distinct matches above threshold, OR
+        // 2. Top match average is very high, OR
+        // 3. At least 2 different user colors match with location colors, OR
+        // 4. We specifically have matches for both red and cyan or red and another color
+        const hasRedMatches = colorTypeMatches.red > 0;
+        const hasCyanMatches = colorTypeMatches.cyan > 0;
+        const hasOrangeMatches = colorTypeMatches.orange > 0;
+        
+        const hasRedCyanCombo = hasRedMatches && hasCyanMatches;
+        const hasRedOrangeCombo = hasRedMatches && hasOrangeMatches;
+        const hasOrangeCyanCombo = hasOrangeMatches && hasCyanMatches;
+        
+        const distinctUserColorsMatched = Object.values(userColorMatches).filter(count => count > 0).length;
+        const distinctLocationColorsMatched = Object.values(locationColorMatches).filter(count => count > 0).length;
+        
+        const hasEnoughMatches = 
+          (totalMatches >= 2) || 
+          (topMatchAverage >= 0.6) || 
+          (distinctUserColorsMatched >= 2) || 
+          (distinctLocationColorsMatched >= 2) ||
+          hasRedCyanCombo || 
+          hasRedOrangeCombo || 
+          hasOrangeCyanCombo;
+        
+        // Calculate an overall score for sorting
+        const matchScore = 
+          (totalMatches * 5) + 
+          (distinctUserColorsMatched * 10) + 
+          (distinctLocationColorsMatched * 10) + 
+          (topMatchAverage * 20) +
+          (hasRedCyanCombo ? 15 : 0) +
+          (hasRedOrangeCombo ? 10 : 0) +
+          (hasOrangeCyanCombo ? 10 : 0);
+        
+        // Log detailed match info for debugging
+        matchLog.push({
+          locationId: location.id,
+          locationName: location.name,
+          userColors: userColors,
+          locationColors: locationColors,
+          totalMatches,
+          userColorMatches,
+          locationColorMatches,
+          matchingColorTypes,
+          colorTypeMatches,
+          hasRedCyanCombo,
+          hasRedOrangeCombo,
+          topMatchAverage,
+          topMatches: topMatches.slice(0, 2), // Just show top 2 for brevity
+          matchScore,
+          included: hasEnoughMatches
+        });
+        
+        // Include locations that meet our matching criteria
+        if (hasEnoughMatches) {
+          matchingLocations.push({
+            ...location,
+            auraMatchCount: Math.max(distinctUserColorsMatched, distinctLocationColorsMatched),
+            auraMatchScore: matchScore,
+            hasRedCyanCombo,
+            hasRedOrangeCombo
+          });
+        }
+      }
+      
+      // Log complete match summary for debugging
+      console.log(`Found ${matchingLocations.length} locations with matching auras:`, matchLog);
+
+      // Sort by match score (desc)
+      matchingLocations.sort((a, b) => b.auraMatchScore - a.auraMatchScore);
+      
+      // Explicitly prioritize locations with red/cyan or red/orange matches
+      // by giving them a bonus in the sort order
+      matchingLocations.sort((a, b) => {
+        // First priority: red/cyan combo
+        if (a.hasRedCyanCombo && !b.hasRedCyanCombo) return -1;
+        if (!a.hasRedCyanCombo && b.hasRedCyanCombo) return 1;
+        
+        // Second priority: red/orange combo
+        if (a.hasRedOrangeCombo && !b.hasRedOrangeCombo) return -1;
+        if (!a.hasRedOrangeCombo && b.hasRedOrangeCombo) return 1;
+        
+        // Fall back to score
+        return b.auraMatchScore - a.auraMatchScore;
+      });
+      
+      // Return the aura-matched locations
+      filteredLocations = matchingLocations;
+      
+      // Ensure we show plenty of results
+      if (filteredLocations.length > 75) {
+        console.log(`Limiting from ${filteredLocations.length} to 75 top aura matches`);
+        filteredLocations.splice(75);
+      } else if (filteredLocations.length < 10) {
+        // If we found fewer than 10 matches, add locations with any similarity
+        console.log("Found fewer than 10 locations with color matches. Adding more...");
+        
+        // Sort all locations with any decent match but didn't meet our criteria
+        const additionalLocations = matchLog
+          .filter(entry => !entry.included && entry.topMatchAverage >= 0.2)
+          .sort((a, b) => b.topMatchAverage - a.topMatchAverage)
+          .slice(0, 20 - filteredLocations.length); // Fill up to 20 total
+        
+        for (const match of additionalLocations) {
+          const location = locations.find(loc => loc.id === match.locationId);
+          if (location) {
+            filteredLocations.push({
+              ...location,
+              auraMatchCount: 1,
+              auraMatchScore: match.topMatchAverage * 10 // Scale for consistency
+            });
+          }
+        }
+        
+        console.log(`Added ${additionalLocations.length} additional locations with partial matches`);
+      }
+    }
+    
     // Adaptive limit based on zoom level and performance 
     // More locations at wider zoom levels
-    let maxLocations = 100; // Default max
+    let maxLocations = 200; // Increased from 100 to 200 for wider coverage
     
     if (currentZoom < 12) {
-      maxLocations = 80; // Far out - show more major landmarks
+      maxLocations = 180; // Far out - show more major landmarks
     } else if (currentZoom < 14) {
-      maxLocations = 90; // Medium zoom - show more locations
+      maxLocations = 190; // Medium zoom - show more locations
     } else if (currentZoom < 16) {
-      maxLocations = 95; // Closer zoom - show even more locations
+      maxLocations = 195; // Closer zoom - show even more locations
     } else {
-      maxLocations = 100; // Full detail in local neighborhood
+      maxLocations = 200; // Full detail in local neighborhood
     }
     
     // IMPORTANT: For smooth dragging, use a consistent number of markers
     if (currentBounds) {
       // Filter to locations in current view
-      const locationsInView = filteredByType.filter(location => {
+      const locationsInView = filteredLocations.filter(location => {
         const position = { lat: location.latitude, lng: location.longitude };
         return currentBounds.contains(position);
       });
@@ -961,10 +1388,12 @@ function DiscoverScreen() {
       locationsInView.sort((a, b) => b.importanceScore - a.importanceScore);
       
       // Limit to improve performance
-      return locationsInView.slice(0, maxLocations);
+      const result = locationsInView.slice(0, maxLocations);
+      
+      return result;
     } else {
       // If no bounds yet, show locations near current location based on distance
-      const nearbyLocations = filteredByType.filter(location => {
+      const nearbyLocations = filteredLocations.filter(location => {
         if (!currentLocation || currentLocation === DEFAULT_CENTER) return true;
         
         // Simple distance calculation (approximate)
@@ -979,18 +1408,16 @@ function DiscoverScreen() {
       // Sort by importance
       nearbyLocations.sort((a, b) => b.importanceScore - a.importanceScore);
       
-      console.log(`No bounds yet, showing ${nearbyLocations.length} nearby locations`);
-      
       // If we still don't have locations, just show the top 10 important ones from all locations
       if (nearbyLocations.length === 0) {
-        console.log("No nearby locations, showing top important locations");
-        filteredByType.sort((a, b) => b.importanceScore - a.importanceScore);
-        return filteredByType.slice(0, 10);
+        // console.log("No nearby locations, showing top important locations");
+        filteredLocations.sort((a, b) => b.importanceScore - a.importanceScore);
+        return filteredLocations.slice(0, 10);
       }
       
       return nearbyLocations.slice(0, maxLocations);
     }
-  }, [locations, currentZoom, currentBounds, activeFilter, currentLocation]);
+  }, [locations, currentZoom, currentBounds, activeFilter, currentLocation, userData, auraMatchEnabled]);
 
   // Get filtered locations for current zoom level and type filter
   const filteredLocations = getFilteredLocations();
@@ -1134,12 +1561,40 @@ function DiscoverScreen() {
         const data = await response.json();
         console.log("API Response data:", data);
         
+        // Ensure we have valid aura data
+        if (!data.aura_color || !data.aura_color.includes('gradient')) {
+            console.warn("Invalid or missing aura color gradient, using default");
+            
+            // Extract any individual colors that might be available
+            const colors = [];
+            if (data.aura_color1) colors.push(data.aura_color1);
+            if (data.aura_color2) colors.push(data.aura_color2);
+            if (data.aura_color3) colors.push(data.aura_color3);
+            
+            // If we have colors, create gradient from them
+            if (colors.length > 0) {
+                while (colors.length < 3) {
+                    colors.push(colors[colors.length - 1] || '#0000FF');
+                }
+                data.aura_color = `linear-gradient(45deg, ${colors.join(', ')})`;
+            } else {
+                // Default gradient
+                data.aura_color = 'linear-gradient(45deg, #0000FF, #800080, #00FF00)';
+            }
+        }
+        
+        // Ensure we have valid shape
+        if (!data.aura_shape || !['sparkling', 'flowing', 'pulsing', 'balanced'].includes(data.aura_shape)) {
+            console.warn("Invalid or missing aura shape, using default");
+            data.aura_shape = 'balanced';
+        }
+        
         const processedData = {
           ...data,
           username: data.username || "User",
-          aura_color: data.aura_color || data.auraColor || 'linear-gradient(to right, #6d4aff, #9e8aff)',
-          aura_shape: data.aura_shape || data.auraShape || 'balanced',
-          response_speed: data.response_speed || data.responseSpeed || 'medium'
+          aura_color: data.aura_color,
+          aura_shape: data.aura_shape,
+          response_speed: 'medium' // Always set to medium
         };
         
         setUserData(processedData);
@@ -1170,6 +1625,13 @@ function DiscoverScreen() {
     }
   };
 
+  // Add a new handler for the aura toggle
+  const handleAuraToggle = () => {
+    setAuraMatchEnabled(prev => !prev);
+    // Reset overlapped area when toggling aura
+    setOverlappedArea(null);
+  };
+
   if (loadError) {
     return <div className="error-screen">Error loading Google Maps</div>;
   }
@@ -1181,8 +1643,37 @@ function DiscoverScreen() {
   return (
     <div className="discover-container">
       <div className="discover-header">
-        <button className="back-button" onClick={handleBackClick}>
-          <span className="material-icons">arrow_back</span>
+        {/* Back button */}
+        <button 
+          className="back-button" 
+          onClick={handleBackClick}
+          style={{
+            position: 'absolute',
+            top: '350px',
+            left: '20px',
+            width: '200px',
+            height: '200px',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 900,
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+          }}
+        >
+          <span 
+            className="material-icons"
+            style={{
+              color: 'white',
+              fontSize: '70px'
+            }}
+          >
+            arrow_back
+          </span>
         </button>
         
         {userData && (
@@ -1228,6 +1719,38 @@ function DiscoverScreen() {
           ))}
         </div>
       </div>
+      
+      {/* Add the large aura match button at the bottom of the screen */}
+      <button 
+        className={`aura-match-button-large ${auraMatchEnabled ? 'active' : ''}`} 
+        onClick={handleAuraToggle}
+        style={{
+          position: 'absolute',
+          bottom: '30px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 900,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '15px 30px',
+          backgroundColor: auraMatchEnabled ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.85)',
+          color: auraMatchEnabled ? '#000000' : '#ffffff',
+          border: auraMatchEnabled ? '3px solid #ffffff' : '3px solid rgba(255, 255, 255, 0.5)',
+          borderRadius: '30px',
+          boxShadow: '0 4px 10px rgba(0, 0, 0, 0.5)',
+          transition: 'all 0.3s',
+          cursor: 'pointer',
+          fontSize: '18px',
+          fontWeight: '600',
+          width: '70%',
+          maxWidth: '350px',
+          height: '60px'
+        }}
+      >
+        <span className="material-icons" style={{ marginRight: '10px', fontSize: '28px' }}>auto_awesome</span>
+        <span>Aura Match {auraMatchEnabled ? 'ON' : 'OFF'}</span>
+      </button>
       
       <GoogleMap
         mapContainerStyle={mapContainerStyle}

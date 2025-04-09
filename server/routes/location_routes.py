@@ -8,12 +8,17 @@ import requests
 import os
 import random  # Add this import for sample data generation
 from sqlalchemy import func
+import googlemaps  # Add import for Google Maps client
 
 # Import the analyze_place_and_create_aura function
 from server.routes.discover_routes import analyze_place_and_create_aura, VIBE_TYPES, AURA_COLORS, AURA_NAMES
 
 # Google Places API key from environment
 GOOGLE_PLACES_API_KEY = os.environ.get('GOOGLE_PLACES_API_KEY', '')
+GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', GOOGLE_PLACES_API_KEY)
+
+# Initialize Google Maps client
+gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
 
 # Aura shapes and colors for testing
 AURA_NAMES = ['Vibrant', 'Peaceful', 'Energizing', 'Calming', 'Inspiring', 'Healing', 'Balanced', 'Uplifting']
@@ -238,6 +243,7 @@ def analyze_place_and_create_aura(place_info):
 
 class LocationList(Resource):
     def get(self):
+        # First get all locations from database
         locations = Location.query.all()
         location_list = []
         

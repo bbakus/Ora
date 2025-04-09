@@ -65,13 +65,13 @@
   height: 320px;
 }
 
-/* Back button repositioned below filter bar */
+/* Back button */
 .back-button {
   position: absolute;
   top: 350px;
   left: 20px;
-  width: 200px;
-  height: 200px;
+  width: 44px;
+  height: 44px;
   background-color: rgba(0, 0, 0, 0.7);
   border-radius: 50%;
   display: flex;
@@ -81,7 +81,7 @@
   border: none;
   cursor: pointer;
   transition: all 0.2s;
-  
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .back-button:hover {
@@ -91,7 +91,21 @@
 
 .back-button .material-icons {
   color: white;
-  font-size: 100px;
+  font-size: 24px;
+}
+
+/* Responsive back button */
+@media (max-width: 768px) {
+  .back-button {
+    width: 38px;
+    height: 38px;
+    top: 360px;
+    left: 15px;
+  }
+  
+  .back-button .material-icons {
+    font-size: 20px;
+  }
 }
 
 .center-button {
@@ -359,16 +373,7 @@
     font-size: 32px;
   }
   
-  .back-button {
-    width: 120px;
-    height: 120px;
-    top: 220px; /* Adjusted for mobile */
-  }
-  
-  .back-button svg {
-    width: 48px;
-    height: 48px;
-  }
+ 
   
   .center-button {
     width: 100px; /* Even smaller on mobile */

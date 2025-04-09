@@ -12,7 +12,7 @@ function LandingScreen(){
             <div className="background-image">
                 <img src="assets/images/opening.png"/>
             </div>
-            <div className='rainbow-background'></div>
+            <div className='rainbow-background-1'></div>
         </div>
     )
 }

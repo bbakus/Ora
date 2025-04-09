@@ -239,7 +239,7 @@
 
 .google-maps-button {
   padding: 20px 30px;
-  background: linear-gradient(to right, #00b7c2, #4ecdc4);
+  background: linear-gradient(125deg, #00b7c2, #4ecdc4);
   color: white;
   border: none;
   border-radius: 30px;
@@ -256,14 +256,14 @@
 }
 
 .google-maps-button:hover {
-  background: linear-gradient(to right, #00a6b0, #3dbcb4);
+  background: linear-gradient(125deg, #00a6b0, #3dbcb4);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 183, 194, 0.4);
 }
 
 .add-collection-button {
   padding: 15px 30px;
-  background: linear-gradient(to right, #E91E63, #FF5252);
+  background: linear-gradient(125deg, #E91E63, #FF5252);
   color: white;
   border: none;
   border-radius: 30px;
@@ -282,7 +282,7 @@
 }
 
 .add-collection-button:hover {
-  background: linear-gradient(to right, #D81B60, #FF1744);
+  background: linear-gradient(45deg, #D81B60, #FF1744);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(233, 30, 99, 0.4);
 }

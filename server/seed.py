@@ -57,8 +57,8 @@ gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
 
 # Constants
 TEST_MODE = False  # Set to True for development/testing
-MAX_LOCATIONS_PER_TYPE = 25  # Increased from 10 to 30 locations per type
-MAX_REVIEWS_PER_LOCATION = 15  # Increased from 5 to 15 reviews per location
+MAX_LOCATIONS_PER_TYPE = 35  # Increased to have 10 more locations per area per type
+MAX_REVIEWS_PER_LOCATION = 25  # Increased to capture 10 more reviews per location
 
 # List of neighborhoods in NYC with their coordinates
 NYC_AREAS = [
@@ -206,10 +206,13 @@ PLACE_TYPES = [
 
 # Vibey keywords for different vibes
 VIBE_KEYWORDS = {
-    'chill': ['relaxed', 'calm', 'laid-back', 'cozy', 'mellow', 'relaxing', 'serene', 'peaceful', 'soothing', 'tranquil'],
-    'energetic': ['lively', 'vibrant', 'dynamic', 'exciting', 'active', 'buzzing', 'pulsating', 'upbeat', 'spirited', 'animated'],
-    'formal': ['elegant', 'sophisticated', 'upscale', 'refined', 'polished', 'classy', 'high-end', 'fancy', 'luxurious', 'chic'],
-    'balanced': ['comfortable', 'welcoming', 'friendly', 'pleasant', 'harmonious', 'balanced', 'moderate', 'casual', 'nice', 'agreeable']
+    'energy': ['energetic', 'vibrant', 'lively', 'dynamic', 'exciting', 'buzzing', 'pulsating', 'upbeat', 'spirited', 'animated'],
+    'calmness': ['calm', 'peaceful', 'serene', 'tranquil', 'quiet', 'relaxing', 'soothing', 'mellow', 'gentle', 'soft'],
+    'warmth': ['warm', 'cozy', 'inviting', 'welcoming', 'friendly', 'comfortable', 'homely', 'intimate', 'pleasant', 'charming'],
+    'elegance': ['elegant', 'sophisticated', 'refined', 'classy', 'upscale', 'luxurious', 'chic', 'polished', 'premium', 'exclusive'],
+    'casual': ['casual', 'laid-back', 'relaxed', 'informal', 'easygoing', 'unpretentious', 'simple', 'natural', 'organic', 'balanced'],
+    'freshness': ['fresh', 'clean', 'crisp', 'modern', 'new', 'contemporary', 'innovative', 'light', 'airy', 'bright'],
+    'authenticity': ['authentic', 'genuine', 'real', 'original', 'traditional', 'classic', 'heritage', 'true', 'pure', 'natural']
 }
 
 # Vibe colors for gradient generation
@@ -308,149 +311,163 @@ def calculate_semantic_similarity(tokens, keywords):
 # Replace the analyze_reviews function with this enhanced version
 def analyze_reviews(reviews):
     """Analyze reviews using simple keyword matching to determine aura properties"""
-    # If no reviews, return default values
-    if not reviews:
-        return {'energy': 0.5, 'calmness': 0.5, 'warmth': 0.5, 
+    try:
+        # If no reviews, return default values
+        if not reviews:
+            print("No reviews found, using default vibe scores")
+            return {
+                'energy': 0.5, 'calmness': 0.5, 'warmth': 0.5, 
                 'elegance': 0.5, 'casual': 0.5, 'freshness': 0.5,
-                'authenticity': 0.5}
-    
-    # Initialize sentiment analyzer
-    sia = SentimentIntensityAnalyzer()
-    
-    # Initialize category scores
-    category_scores = {
-        'energy': 0.5, 'calmness': 0.5, 'warmth': 0.5, 
-        'elegance': 0.5, 'casual': 0.5, 'freshness': 0.5,
-        'authenticity': 0.5
-    }
-    vibe_scores = {
-        'chill': 0.5, 'energetic': 0.5, 'formal': 0.5, 'balanced': 0.5
-    }
-    
-    # Process each review
-    for review_text in reviews:
-        # Skip empty reviews
-        if not review_text:
-            continue
+                'authenticity': 0.5
+            }
         
-        # Get sentiment score
-        sentiment = sia.polarity_scores(review_text)
-        sentiment_multiplier = 0.5 + sentiment['compound'] * 0.5  # Range from 0 to 1
+        # Initialize sentiment analyzer
+        sia = SentimentIntensityAnalyzer()
         
-        # Simple keyword matching for vibes
-        lower_text = review_text.lower()
+        # Initialize category scores
+        category_scores = {
+            'energy': 0.5, 'calmness': 0.5, 'warmth': 0.5, 
+            'elegance': 0.5, 'casual': 0.5, 'freshness': 0.5,
+            'authenticity': 0.5
+        }
         
-        # For each vibe category
-        for vibe, keywords in VIBE_KEYWORDS.items():
-            # Count keyword matches
-            match_count = sum(lower_text.count(keyword) for keyword in keywords)
-            if match_count > 0:
-                vibe_scores[vibe] += 0.1 * match_count * sentiment_multiplier
-    
-    # Normalize vibe scores
-    max_score = max(vibe_scores.values())
-    if max_score > 1.0:
-        for vibe in vibe_scores:
-            vibe_scores[vibe] /= max_score
-    
-    # Generate aura properties based on vibes
-    if vibe_scores['chill'] > max(vibe_scores['energetic'], vibe_scores['formal']):
-        category_scores['calmness'] = 0.7 + random.random() * 0.3
-        category_scores['warmth'] = 0.6 + random.random() * 0.3
-    elif vibe_scores['energetic'] > max(vibe_scores['chill'], vibe_scores['formal']):
-        category_scores['energy'] = 0.7 + random.random() * 0.3
-        category_scores['freshness'] = 0.6 + random.random() * 0.3
-    elif vibe_scores['formal'] > max(vibe_scores['chill'], vibe_scores['energetic']):
-        category_scores['elegance'] = 0.7 + random.random() * 0.3
-        category_scores['authenticity'] = 0.6 + random.random() * 0.3
-    else:
-        category_scores['casual'] = 0.7 + random.random() * 0.3
-        category_scores['warmth'] = 0.6 + random.random() * 0.3
-    
-    # Add vibe scores to final output
-    category_scores.update({f"vibe_{vibe}": score for vibe, score in vibe_scores.items()})
-    
-    return category_scores
+        # Process each review
+        for review_text in reviews:
+            # Skip empty reviews
+            if not review_text:
+                continue
+            
+            # Get sentiment score
+            sentiment = sia.polarity_scores(review_text)
+            sentiment_multiplier = 0.5 + sentiment['compound'] * 0.5  # Range from 0 to 1
+            
+            # Simple keyword matching for properties
+            lower_text = review_text.lower()
+            
+            # Energy-related keywords
+            energy_keywords = ['energetic', 'vibrant', 'lively', 'dynamic', 'exciting', 'buzzing', 'pulsating']
+            energy_matches = sum(lower_text.count(keyword) for keyword in energy_keywords)
+            category_scores['energy'] += 0.1 * energy_matches * sentiment_multiplier
+            
+            # Calmness-related keywords
+            calm_keywords = ['calm', 'peaceful', 'serene', 'tranquil', 'quiet', 'relaxing', 'soothing']
+            calm_matches = sum(lower_text.count(keyword) for keyword in calm_keywords)
+            category_scores['calmness'] += 0.1 * calm_matches * sentiment_multiplier
+            
+            # Warmth-related keywords
+            warm_keywords = ['warm', 'cozy', 'inviting', 'welcoming', 'friendly', 'comfortable', 'homely']
+            warm_matches = sum(lower_text.count(keyword) for keyword in warm_keywords)
+            category_scores['warmth'] += 0.1 * warm_matches * sentiment_multiplier
+            
+            # Elegance-related keywords
+            elegant_keywords = ['elegant', 'sophisticated', 'refined', 'classy', 'upscale', 'luxurious', 'chic']
+            elegant_matches = sum(lower_text.count(keyword) for keyword in elegant_keywords)
+            category_scores['elegance'] += 0.1 * elegant_matches * sentiment_multiplier
+            
+            # Casual-related keywords
+            casual_keywords = ['casual', 'laid-back', 'relaxed', 'informal', 'easygoing', 'unpretentious', 'simple']
+            casual_matches = sum(lower_text.count(keyword) for keyword in casual_keywords)
+            category_scores['casual'] += 0.1 * casual_matches * sentiment_multiplier
+            
+            # Freshness-related keywords
+            fresh_keywords = ['fresh', 'clean', 'crisp', 'modern', 'new', 'contemporary', 'innovative']
+            fresh_matches = sum(lower_text.count(keyword) for keyword in fresh_keywords)
+            category_scores['freshness'] += 0.1 * fresh_matches * sentiment_multiplier
+            
+            # Authenticity-related keywords
+            authentic_keywords = ['authentic', 'genuine', 'real', 'original', 'traditional', 'classic', 'heritage']
+            authentic_matches = sum(lower_text.count(keyword) for keyword in authentic_keywords)
+            category_scores['authenticity'] += 0.1 * authentic_matches * sentiment_multiplier
+        
+        # Normalize scores
+        max_score = max(category_scores.values())
+        if max_score > 1.0:
+            for category in category_scores:
+                category_scores[category] /= max_score
+        
+        return category_scores
+    except Exception as e:
+        print(f"Error in analyze_reviews: {e}")
+        # Return safe default values
+        return {
+            'energy': 0.5, 'calmness': 0.5, 'warmth': 0.5, 
+            'elegance': 0.5, 'casual': 0.5, 'freshness': 0.5,
+            'authenticity': 0.5
+        }
 
 def generate_gradient(scores):
-    """Generate a gradient based on aura scores"""
-    # Find dominant aura categories
-    aura_scores = {k: v for k, v in scores.items() if not k.startswith('vibe_')}
-    aura_items = sorted(aura_scores.items(), key=lambda x: x[1], reverse=True)
-    
-    # Get the top two categories
-    if len(aura_items) >= 2:
-        top_category = aura_items[0][0]
-        second_category = aura_items[1][0]
-    else:
-        top_category = aura_items[0][0] if aura_items else 'energy'
-        second_category = 'warmth'  # Default second category
-    
-    # Extract vibe scores
-    vibe_scores = {k.replace('vibe_', ''): v for k, v in scores.items() if k.startswith('vibe_')}
-    
-    # Determine vibe type using the updated scores
-    vibe_type = determine_vibe_type(vibe_scores)
-    
-    # Generate more diverse color combinations (40% chance)
-    if random.random() < 0.4:
-        # Use colors from the top two categories directly
-        start_color = random.choice(BASE_COLORS[top_category])
-        end_color = random.choice(BASE_COLORS[second_category])
-    elif random.random() < 0.5:
-        # Mix colors from different vibe categories (50% of remaining cases)
-        all_vibe_types = list(VIBE_COLORS.keys())
+    """Generate three distinct colors based on review analysis scores"""
+    try:
+        # If no scores, use default colors
+        if not scores or sum(scores.values()) == 0:
+            return {
+                'aura_color1': '#7B1FA2',  # Purple
+                'aura_color2': '#2196F3',  # Blue
+                'aura_color3': '#FF5722'   # Orange
+            }
         
-        # Ensure we don't pick the same vibe twice
-        primary_vibe = vibe_type
-        remaining_vibes = [v for v in all_vibe_types if v != primary_vibe]
-        secondary_vibe = random.choice(remaining_vibes)
+        # Get top 3 categories by score
+        top_categories = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:3]
         
-        # Get colors from both categories
-        primary_color_set = random.choice(VIBE_COLORS[primary_vibe])
-        secondary_color_set = random.choice(VIBE_COLORS[secondary_vibe])
+        # Map categories to their corresponding colors
+        colors = []
+        for category, score in top_categories:
+            if category in BASE_COLORS:
+                # Use the color that matches the intensity of the score
+                color_index = min(int(score * len(BASE_COLORS[category])), len(BASE_COLORS[category]) - 1)
+                colors.append(BASE_COLORS[category][color_index])
+            else:
+                # If category not found, use a random color from any category
+                random_category = random.choice(list(BASE_COLORS.keys()))
+                colors.append(random.choice(BASE_COLORS[random_category]))
         
-        # Mix them by using one's dark color with the other's light color
-        if random.random() < 0.5:
-            start_color = primary_color_set['dark']
-            end_color = secondary_color_set['light']
-        else:
-            start_color = secondary_color_set['dark']
-            end_color = primary_color_set['light']
-    else:
-        # Use colors from the determined vibe type
-        color_set = random.choice(VIBE_COLORS[vibe_type])
-        start_color = color_set['dark']
-        end_color = color_set['light']
-    
-    return f"linear-gradient(45deg, {start_color}, {end_color})"
+        # Ensure we have exactly 3 colors
+        while len(colors) < 3:
+            random_category = random.choice(list(BASE_COLORS.keys()))
+            colors.append(random.choice(BASE_COLORS[random_category]))
+        
+        return {
+            'aura_color1': colors[0],
+            'aura_color2': colors[1],
+            'aura_color3': colors[2]
+        }
+    except Exception as e:
+        print(f"Error in generate_gradient: {e}")
+        # Return safe default colors
+        return {
+            'aura_color1': '#7B1FA2',  # Purple
+            'aura_color2': '#2196F3',  # Blue
+            'aura_color3': '#FF5722'   # Orange
+        }
 
 def determine_vibe_type(vibe_scores):
     """Determine the overall vibe type based on scores"""
-    # Handle empty dictionary case
-    if not vibe_scores:
-        return 'balanced'  # Default vibe type if no scores available
+    try:
+        # Filter to only include valid vibe types
+        valid_scores = {k: v for k, v in vibe_scores.items() if k in VIBE_KEYWORDS}
         
-    # Add some randomness for variety (softmax-like)
-    temperature = 0.3  # Controls randomness - higher means more random
-    randomized_scores = {}
-    for vibe, score in vibe_scores.items():
-        randomized_scores[vibe] = score + random.random() * temperature
-    
-    # Return the vibe with the highest score
-    return max(randomized_scores.items(), key=lambda x: x[1])[0]
+        # Handle empty dictionary case
+        if not valid_scores:
+            return 'casual'  # Default to casual if no valid scores
+            
+        # Return the vibe with the highest score
+        vibe_type = max(valid_scores.items(), key=lambda x: x[1])[0]
+        return vibe_type
+    except Exception as e:
+        print(f"Error in determine_vibe_type: {e}")
+        return 'casual'  # Default to casual on error
 
 def determine_shape(rating):
     """Determine aura shape based on rating"""
     try:
         if rating <= 2.0:
-            return "soft"
+            return "soft"  # Low energy, more relaxed
         elif rating <= 3.0:
-            return "pulse"
+            return "pulse"  # Moderate energy, steady
         elif rating <= 4.0:
-            return "flowing"
+            return "flowing"  # High energy, dynamic
         else:
-            return "sparkle"
+            return "sparkle"  # Exceptional energy, vibrant
     except Exception as e:
         print(f"Error in determine_shape: {e}")
         return "flowing"  # Default shape
@@ -501,234 +518,175 @@ def get_place_details(place_id):
             'type', 'formatted_phone_number', 'website', 'price_level', 'user_ratings_total'
         ])
         
-        # Print for debugging
-        print(f"    Got details for place {place_id}: {place_details.get('status')}")
-        
-        # Return the original response which includes a 'result' key
-        return place_details
+        if place_details and 'result' in place_details:
+            return place_details['result']
+        return None
     except Exception as e:
-        print(f"    Error getting place details for {place_id}: {e}")
-        # Return empty dict with result key
-        return {'result': {}}
+        print(f"Error getting place details: {str(e)}")
+        return None
 
 def create_aura(review_texts, avg_rating):
-    """Create an aura based on review texts and rating"""
+    """Create an aura based on reviews and rating"""
     try:
-        # Use a simpler approach with a fallback mechanism
-        # Analyze sentiment of reviews
-        sia = SentimentIntensityAnalyzer()
-        sentiments = [sia.polarity_scores(text)['compound'] for text in review_texts if text]
+        # Analyze reviews to get vibe scores
+        vibe_scores = analyze_reviews(review_texts)
         
-        # Use simple keyword matching as fallback
-        vibe_keywords = {
-            'chill': ['relaxed', 'calm', 'chill', 'peaceful', 'quiet', 'cozy'],
-            'energetic': ['lively', 'energetic', 'fun', 'exciting', 'vibrant', 'dynamic'],
-            'formal': ['elegant', 'sophisticated', 'upscale', 'fancy', 'classy', 'professional'],
-            'balanced': ['balanced', 'comfortable', 'pleasant', 'nice', 'good', 'decent']
-        }
-        
-        # Map vibes to base color categories for more diverse combinations
-        vibe_to_color_mapping = {
-            'chill': ['calmness', 'freshness'],
-            'energetic': ['energy', 'warmth', 'authenticity'],
-            'formal': ['elegance', 'authenticity'],
-            'balanced': ['casual', 'freshness', 'calmness']
-        }
-        
-        # Default vibe if we can't determine one
-        vibe = 'balanced'
-        
-        # Try to determine vibe from reviews
-        if review_texts:
-            # Combine all reviews into a single string and lowercase
-            all_text = ' '.join(review_texts).lower()
-            
-            # Count occurrences of keywords for each vibe
-            vibe_scores = {}
-            for v, keywords in vibe_keywords.items():
-                score = sum(all_text.count(keyword) for keyword in keywords)
-                vibe_scores[v] = score
-            
-            # Use sentiment to influence the vibe
-            avg_sentiment = sum(sentiments) / len(sentiments) if sentiments else 0
-            
-            # Adjust vibe scores based on sentiment
-            if avg_sentiment > 0.5:  # Very positive
-                vibe_scores['energetic'] += 2
-                vibe_scores['balanced'] += 1
-            elif avg_sentiment > 0.2:  # Positive
-                vibe_scores['chill'] += 1
-                vibe_scores['balanced'] += 2
-            elif avg_sentiment < -0.2:  # Negative
-                vibe_scores['formal'] += 1
-            
-            # Select vibe with highest score
-            vibe = max(vibe_scores, key=vibe_scores.get)
-        
-        # Decide whether to use diverse colors (70% chance) or vibe-based colors (30% chance)
-        if random.random() < 0.7:
-            # Use diverse colors - pick two different color categories
-            primary_category = random.choice(vibe_to_color_mapping[vibe])
-            
-            # Get all color categories and remove the primary one
-            all_categories = list(BASE_COLORS.keys())
-            all_categories.remove(primary_category)
-            
-            # Pick a secondary category that's different from the primary
-            secondary_category = random.choice(all_categories)
-            
-            # Get colors from each category
-            start_color = random.choice(BASE_COLORS[primary_category])
-            end_color = random.choice(BASE_COLORS[secondary_category])
-            
-            # Generate a name that reflects both color categories
-            aura_name = f"{random.choice(AURA_NAMES[primary_category])} {primary_category.capitalize()}-{secondary_category.capitalize()} Aura"
-        else:
-            # Use vibe-based colors for consistency with previous code
-            color_set = random.choice(VIBE_COLORS[vibe])
-            start_color = color_set['dark']
-            end_color = color_set['light']
-            aura_name = f"{random.choice(AURA_NAMES[vibe])} {vibe.capitalize()} Aura"
-        
-        # Create the gradient
-        gradient = f"linear-gradient(45deg, {start_color}, {end_color})"
+        # Generate three colors based on vibe scores
+        colors = generate_gradient(vibe_scores)
         
         # Determine shape based on rating
         shape = determine_shape(avg_rating)
         
+        # Determine the dominant vibe type
+        vibe_type = determine_vibe_type(vibe_scores)
+        
+        # Get keywords for the dominant vibe
+        keywords = VIBE_KEYWORDS.get(vibe_type, [])
+        if not keywords:
+            # If no keywords found, use the vibe type itself
+            aura_name = f"{vibe_type.capitalize()} Aura"
+        else:
+            # Use a random keyword from the vibe's keywords
+            aura_name = f"{vibe_type.capitalize()} {random.choice(keywords).capitalize()} Aura"
+        
         return {
             'name': aura_name,
-            'color': gradient,
+            'aura_color1': colors['aura_color1'],
+            'aura_color2': colors['aura_color2'],
+            'aura_color3': colors['aura_color3'],
             'shape': shape
         }
     except Exception as e:
         print(f"Error in create_aura: {e}")
-        # Return a default aura in case of errors
+        # Return default aura with casual vibe
         return {
-            'name': "Dynamic Diverse Aura",
-            'color': "linear-gradient(45deg, #FF5252, #26A69A)",  # Red to Teal
-            'shape': "flowing"
+            'name': 'Casual Relaxed Aura',
+            'aura_color1': '#7B1FA2',  # Purple
+            'aura_color2': '#2196F3',  # Blue
+            'aura_color3': '#FF5722',  # Orange
+            'shape': 'flowing'
         }
 
 def seed_database():
-    """Seed the database with locations and reviews"""
-    print("Seeding database...")
+    """Seed the database with locations from Google Places API"""
+    print("🌱 Seeding database with locations...")
     
-    # Create test user
-    user = create_test_user()
-    test_collection = create_test_collection(user)
-    print(f"Created test user: {user.username} and test collection: {test_collection.name}")
+    # Get all place types
+    place_types = PLACE_TYPES
     
-    # Count total locations added
+    # Track total locations added
     total_locations = 0
     
-    # Process each area and place type
+    # Process each area
     for area in NYC_AREAS:
-        print(f"Processing area: {area['name']}")
+        print(f"\nProcessing area: {area['name']}")
         
-        for place_type in PLACE_TYPES:
-            print(f"  - Searching for {place_type}s...")
+        # Process each place type
+        for place_type in place_types:
+            print(f"  Searching for {place_type}s...")
             
-            # Search for places in this area
-            places_result = gmaps.places_nearby(
-                location=area['center'],
-                radius=area['radius'],
-                type=place_type,
-                rank_by="prominence"
-            )
-            
-            # Limit the number of locations per type in test mode
-            locations_limit = MAX_LOCATIONS_PER_TYPE if not TEST_MODE else 3
-            places = places_result.get('results', [])[:locations_limit]
-            
-            print(f"    Found {len(places)} {place_type}s")
-            
-            # Process each place
-            for place in places:
-                try:
-                    place_id = place.get('place_id')
-                    if not place_id:
-                        continue
-                    
-                    # Check if place already exists in database
-                    existing_location = Location.query.filter_by(google_place_id=place_id).first()
-                    if existing_location:
-                        print(f"    Skipping existing location: {place.get('name')}")
-                        continue
-                    
-                    # Get full place details
-                    details = get_place_details(place_id)
-                    
-                    # Skip places without proper data
-                    if not details or 'result' not in details:
-                        continue
-                    
-                    place_details = details['result']
-                    reviews_data = place_details.get('reviews', [])
-                    
-                    # Calculate avg rating
-                    avg_rating = place_details.get('rating', 3.0)
-                    
-                    # Extract review text for analysis
-                    review_texts = [review.get('text', '') for review in reviews_data]
-                    
-                    # Create aura based on reviews
-                    aura = create_aura(review_texts, avg_rating)
-                    
-                    # Create location object
-                    location = Location(
-                        name=place_details.get('name', ''),
-                        google_place_id=place_id,
-                        latitude=place_details.get('geometry', {}).get('location', {}).get('lat'),
-                        longitude=place_details.get('geometry', {}).get('location', {}).get('lng'),
-                        place_type=place_type,
-                        address=place_details.get('formatted_address', ''),
-                        phone=place_details.get('formatted_phone_number', ''),
-                        website=place_details.get('website', ''),
-                        price_level=place_details.get('price_level', 0),
-                        rating=avg_rating,
-                        user_ratings_total=place_details.get('user_ratings_total', 0),
-                        area=area['name'],
-                        aura_name=aura['name'],
-                        aura_color=aura['color'],
-                        aura_shape=aura['shape']
-                    )
-                    
-                    db.session.add(location)
-                    db.session.flush()  # Flush to get the location ID
-                    total_locations += 1
-                    
-                    # Add reviews for this location
-                    review_limit = MAX_REVIEWS_PER_LOCATION if not TEST_MODE else 2
-                    for review_data in reviews_data[:review_limit]:
-                        review = Review(
-                            location_id=location.id,
-                            user_id=user.id,  # Assign to our test user
-                            body=review_data.get('text', ''),
-                            rating=review_data.get('rating', 0)
-                        )
-                        db.session.add(review)
-                    
-                    # Add to test collection
-                    if random.random() < 0.3:  # 30% chance to add to collection
-                        test_collection.locations.append(location)
-                    
-                    # Commit after each location to avoid transaction issues
-                    db.session.commit()
-                    print(f"    Added location: {location.name}")
+            try:
+                # Search for places of this type in the area
+                places = gmaps.places_nearby(
+                    location=area['center'],
+                    radius=area['radius'],
+                    type=place_type,
+                    language='en'
+                )
                 
-                except Exception as e:
-                    db.session.rollback()  # Roll back transaction on error
-                    print(f"Error processing place: {e}")
+                if not places or 'results' not in places:
+                    print(f"    No results found for {place_type} in {area['name']}")
                     continue
+                
+                # Process each place
+                for place in places['results'][:MAX_LOCATIONS_PER_TYPE]:
+                    try:
+                        # Get detailed place information
+                        place_details = get_place_details(place['place_id'])
+                        
+                        if not place_details:
+                            print(f"    Could not get details for place: {place.get('name', 'Unknown')}")
+                            continue
+                        
+                        # Skip locations without reviews
+                        if not place_details.get('reviews') or len(place_details.get('reviews', [])) == 0:
+                            print(f"    Skipping {place_details.get('name', 'Unknown')} - No reviews")
+                            continue
+                        
+                        # Get review texts and average rating
+                        review_texts = [review['text'] for review in place_details.get('reviews', [])[:MAX_REVIEWS_PER_LOCATION]]
+                        avg_rating = place_details.get('rating', 0)
+                        
+                        # Print how many reviews were found
+                        print(f"    Processing {place_details.get('name', 'Unknown')} with {len(review_texts)} reviews")
+                        
+                        try:
+                            # Create aura based on reviews
+                            aura = create_aura(review_texts, avg_rating)
+                            
+                            # Create location
+                            location = Location(
+                                name=place_details['name'],
+                                address=place_details.get('formatted_address', ''),
+                                latitude=place_details['geometry']['location']['lat'],
+                                longitude=place_details['geometry']['location']['lng'],
+                                place_type=place_type,
+                                area=area['name'],
+                                aura_name=aura['name'],
+                                aura_color1=aura['aura_color1'],
+                                aura_color2=aura['aura_color2'],
+                                aura_color3=aura['aura_color3'],
+                                aura_shape=aura['shape']
+                            )
+                            
+                            # Add to database
+                            db.session.add(location)
+                            total_locations += 1
+                            
+                            # Add reviews to the database from Google Places API
+                            review_count = 0
+                            for i, review_data in enumerate(place_details.get('reviews', [])[:MAX_REVIEWS_PER_LOCATION]):
+                                try:
+                                    # Create a Review object with the first user (ID 1) as default
+                                    review = Review(
+                                        location_id=location.id,
+                                        user_id=1,  # Default to first user in database
+                                        body=review_data.get('text', ''),
+                                        rating=review_data.get('rating', 0)
+                                    )
+                                    db.session.add(review)
+                                    review_count += 1
+                                except Exception as re:
+                                    print(f"    Error creating review: {re}")
+                            
+                            print(f"    Added {review_count} reviews for {location.name}")
+                            
+                            # Commit periodically to avoid memory issues
+                            if total_locations % 10 == 0:
+                                db.session.commit()
+                                print(f"  Added {total_locations} locations so far...")
+                        except KeyError as ke:
+                            print(f"    KeyError in aura data for {place_details.get('name', 'Unknown')}: {ke}")
+                            continue
+                        except Exception as e:
+                            print(f"    Error processing aura data: {e}")
+                            continue
+                        
+                    except Exception as e:
+                        print(f"Error processing place: {str(e)}")
+                        continue
+                
+            except Exception as e:
+                print(f"Error searching for {place_type} in {area['name']}: {str(e)}")
+                continue
     
-    # Check if we need to add sample data as fallback
-    if total_locations == 0:
-        print("No locations were added from API. Adding sample locations instead.")
-        create_sample_locations(user, test_collection)
-        total_locations = Location.query.count()
-    
-    print(f"Seeding complete. Added {total_locations} locations.")
+    # Final commit
+    try:
+        db.session.commit()
+        print(f"\n✅ Successfully added {total_locations} locations!")
+    except Exception as e:
+        db.session.rollback()
+        print(f"\n❌ Error committing locations: {str(e)}")
 
 def create_sample_locations(user, collection):
     """Create sample locations if API fails"""

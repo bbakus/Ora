@@ -1,5 +1,6 @@
-from flask import Flask
+from flask import Flask, jsonify, request
 from flask_cors import CORS
+import os
 from server.config import Config
 from server.extensions import db, migrate, api
 
@@ -9,6 +10,15 @@ from server.models.location import Location
 from server.models.collection import Collection
 from server.models.review import Review
 from server.models.friend_request import FriendRequest
+from server.models.tag import Tag
+
+# Import routes
+from server.routes.auth_routes import register_resources as register_auth_routes
+from server.routes.user_routes import register_resources as register_user_routes
+from server.routes.discover_routes import register_resources as register_discover_routes
+from server.routes.collection_routes import register_resources as register_collection_routes
+from server.routes.friend_routes import initialize_routes as register_friend_routes
+from server.routes.openai.openai_routes import register_resources as register_openai_routes
 
 def create_app(config_class=Config, instance_path=None):
     app = Flask(__name__, instance_path=instance_path)
@@ -26,20 +36,15 @@ def create_app(config_class=Config, instance_path=None):
         from server.routes import init_app as init_routes
         from server.routes import auth_routes, location_routes, review_routes, user_routes
         
+        # Initialize the API extension
         api.init_app(app)
         
-        # Register all routes directly
-        api.add_resource(location_routes.LocationList, '/api/locations')
-        api.add_resource(location_routes.LocationById, '/api/locations/<int:location_id>')
-        api.add_resource(location_routes.LocationAura, '/api/locations/<int:location_id>/aura')
-        api.add_resource(location_routes.FetchNearbyLocations, '/api/fetch-nearby-locations')
-        api.add_resource(auth_routes.SignUp, '/api/auth/signup')
-        api.add_resource(auth_routes.Login, '/api/auth/login')
-        api.add_resource(user_routes.UserAura, '/api/users/<user_id>/aura')
-        api.add_resource(user_routes.UserData, '/api/users/<user_id>')
-        
-        # Initialize all modular routes through the init_app function
+        # Initialize all routes ONLY through init_routes function
+        # This will handle ALL route registrations to avoid duplicates
         init_routes(app)
+        
+        # DO NOT register routes here to avoid duplication
+        # They're already registered in init_routes
     
     @app.route('/')
     def index():

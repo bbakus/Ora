@@ -306,7 +306,7 @@
     padding: 24px 48px; /* Significantly increased padding even more */
     border: none;
     border-radius: 35px; /* Even rounder corners */
-    background: linear-gradient(to right, #00b7c2, #4ecdc4); /* Teal gradient */
+    background: linear-gradient(125deg, #00b7c2, #4ecdc4); /* Teal gradient */
     color: white;
     font-size: 28px; /* Significantly increased font size even more */
     font-weight: 700; /* Bolder text */
@@ -396,7 +396,7 @@
     width: 50px; /* Increased size */
     height: 50px; /* Increased size */
     border-radius: 50%;
-    background: linear-gradient(to right, #00b7c2, #4ecdc4); /* Teal gradient */
+    background: linear-gradient(45deg, #00b7c2, #4ecdc4); /* Teal gradient */
     border: none;
     display: flex;
     align-items: center;
@@ -684,7 +684,7 @@
 
 /* Action Button - Updated with teal gradient */
 .action-button {
-    background: linear-gradient(to right, #00b7c2, #4ecdc4) !important; /* Teal gradient */
+    background: linear-gradient(45deg, #00b7c2, #4ecdc4) !important; /* Teal gradient */
     color: white !important;
     border: none;
     border-radius: 28px;
@@ -701,7 +701,7 @@
 }
 
 .action-button:hover {
-    background: linear-gradient(to right, #00a6b0, #3dbcb4) !important; /* Slightly darker teal gradient */
+    background: linear-gradient(45deg, #00a6b0, #3dbcb4) !important; /* Slightly darker teal gradient */
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(0, 183, 194, 0.4);
 }
@@ -717,7 +717,7 @@
 }
 
 .footer-button {
-    background: linear-gradient(to right, #00b7c2, #4ecdc4);
+    background: linear-gradient(45deg, #00b7c2, #4ecdc4);
     color: white;
     border: none;
     border-radius: 28px;
@@ -753,12 +753,12 @@
 /* Aura Guide Button */
 .aura-guide-button {
     position: fixed;
-    bottom: 60px;
+    bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
     width: 90%;
     padding: 25px 0;
-    background: linear-gradient(to right, #00b7c2, #4ecdc4);
+    background: linear-gradient(45deg, #00b7c2, #4ecdc4);
     color: white;
     border: none;
     font-size: 70px !important;
@@ -777,12 +777,11 @@
     min-width: 1100px !important;
     min-height: 200px;
     border-radius: 30px !important;
-
     box-shadow: 0 4px 12px rgba(0, 183, 194, 0.4) !important;
 }
 
 .aura-guide-button:hover {
-    background: linear-gradient(to right, #00a6b0, #3dbcb4);
+    background: linear-gradient(45deg, #00a6b0, #3dbcb4);
     transform: translateX(-50%) translateY(-3px) !important;
     box-shadow: 0 6px 16px rgba(0, 183, 194, 0.5) !important;
 }
@@ -901,7 +900,7 @@
 }
 
 .refresh-nearby-btn {
-    background: linear-gradient(to right, #00b7c2, #4ecdc4);
+    background: linear-gradient(45deg, #00b7c2, #4ecdc4);
     color: white;
     border: none;
     border-radius: 28px;

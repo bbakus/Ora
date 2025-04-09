@@ -4,45 +4,49 @@ import './AuraLocationMarker.css';
 
 // SVG aura shapes
 const AuraShapes = {
-  soft: (size, color) => `
+  soft: (size, colors) => `
     <svg width="${size}" height="${size}" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="auraGrad" x1="0%" y1="0%" x2="100%" y2="100%" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="${color}"/>
-          <stop offset="100%" stop-color="#FFFFFF"/>
+          <stop offset="0%" stop-color="${colors.color1}"/>
+          <stop offset="50%" stop-color="${colors.color2}"/>
+          <stop offset="100%" stop-color="${colors.color3}"/>
         </linearGradient>
       </defs>
       <circle cx="25" cy="25" r="24" fill="url(#auraGrad)"/>
     </svg>
   `,
-  pulse: (size, color) => `
+  pulse: (size, colors) => `
     <svg width="${size}" height="${size}" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="auraGrad" x1="0%" y1="0%" x2="100%" y2="100%" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="${color}"/>
-          <stop offset="100%" stop-color="#FFFFFF"/>
+          <stop offset="0%" stop-color="${colors.color1}"/>
+          <stop offset="50%" stop-color="${colors.color2}"/>
+          <stop offset="100%" stop-color="${colors.color3}"/>
         </linearGradient>
       </defs>
       <circle cx="25" cy="25" r="24" fill="url(#auraGrad)"/>
     </svg>
   `,
-  flowing: (size, color) => `
+  flowing: (size, colors) => `
     <svg width="${size}" height="${size}" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="auraGrad" x1="0%" y1="0%" x2="100%" y2="100%" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="${color}"/>
-          <stop offset="100%" stop-color="#FFFFFF"/>
+          <stop offset="0%" stop-color="${colors.color1}"/>
+          <stop offset="50%" stop-color="${colors.color2}"/>
+          <stop offset="100%" stop-color="${colors.color3}"/>
         </linearGradient>
       </defs>
       <circle cx="25" cy="25" r="24" fill="url(#auraGrad)"/>
     </svg>
   `,
-  sparkle: (size, color) => `
+  sparkle: (size, colors) => `
     <svg width="${size}" height="${size}" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="auraGrad" x1="0%" y1="0%" x2="100%" y2="100%" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="${color}"/>
-          <stop offset="100%" stop-color="#FFFFFF"/>
+          <stop offset="0%" stop-color="${colors.color1}"/>
+          <stop offset="50%" stop-color="${colors.color2}"/>
+          <stop offset="100%" stop-color="${colors.color3}"/>
         </linearGradient>
       </defs>
       <circle cx="25" cy="25" r="24" fill="url(#auraGrad)"/>
@@ -53,66 +57,94 @@ const AuraShapes = {
 function AuraLocationMarker({ location, position, onClick, zoom = 15, isExpanded = false, isHighlighted = false }) {
   const [isHovered, setIsHovered] = useState(false);
   
-  // Extract aura data from location - handle both formats
-  const getAuraData = () => {
-    // First try the aura object
-    if (location.aura) {
+  const getAuraData = (props) => {
+    const { location } = props || {};
+    
+    // Check if we have a location with aura colors
+    if (location && (location.aura_color1 || location.aura_color2 || location.aura_color3)) {
+      const color1 = location.aura_color1 || '#6F6FFF';
+      const color2 = location.aura_color2 || '#FF6F6F';
+      const color3 = location.aura_color3 || color2; // Use color3 if available, otherwise fallback to color2
       return {
-        color: location.aura.color,
-        shape: location.aura.shape
+        colors: [color1, color2, color3],
+        gradientString: `linear-gradient(135deg, ${color1}, ${color2}, ${color3})`
       };
     }
     
-    // Then try direct aura properties on location
-    if (location.aura_color1 && location.aura_color2) {
-      return {
-        color: `linear-gradient(45deg, ${location.aura_color1}, ${location.aura_color2})`,
-        shape: location.aura_shape
-      };
+    // Check if we have a raw aura color string (could be a gradient)
+    if (location && location.aura_color) {
+      const colorString = location.aura_color;
+      
+      // If it's a gradient string, extract the colors
+      if (colorString && colorString.includes('gradient')) {
+        const colorMatches = colorString.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g) || [];
+        if (colorMatches.length >= 3) {
+          return {
+            colors: [colorMatches[0], colorMatches[1], colorMatches[2]],
+            gradientString: colorString
+          };
+        } else if (colorMatches.length >= 2) {
+          // If only two colors found, duplicate the second one for the third color
+          return {
+            colors: [colorMatches[0], colorMatches[1], colorMatches[1]],
+            gradientString: `linear-gradient(135deg, ${colorMatches[0]}, ${colorMatches[1]}, ${colorMatches[1]})`
+          };
+        }
+      }
+      
+      // If it's a single color, use it for all three colors
+      if (colorString && colorString.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/)) {
+        return {
+          colors: [colorString, colorString, colorString],
+          gradientString: `linear-gradient(135deg, ${colorString}, ${colorString}, ${colorString})`
+        };
+      }
     }
     
-    if (location.aura_color || location.aura_shape) {
-      return {
-        color: location.aura_color,
-        shape: location.aura_shape
-      };
+    // Check if we have an aura object with a color property
+    if (location && location.aura && location.aura.color) {
+      const aura = location.aura;
+      // If the color is a gradient string, extract the colors
+      if (aura.color.includes('gradient')) {
+        const colorMatches = aura.color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g) || [];
+        if (colorMatches.length >= 3) {
+          return {
+            colors: [colorMatches[0], colorMatches[1], colorMatches[2]],
+            gradientString: aura.color
+          };
+        } else if (colorMatches.length >= 2) {
+          // If only two colors found, duplicate the second one for the third color
+          return {
+            colors: [colorMatches[0], colorMatches[1], colorMatches[1]],
+            gradientString: `linear-gradient(135deg, ${colorMatches[0]}, ${colorMatches[1]}, ${colorMatches[1]})`
+          };
+        }
+      }
+      
+      // If it's a single color, use it for all three colors
+      if (aura.color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/)) {
+        return {
+          colors: [aura.color, aura.color, aura.color],
+          gradientString: `linear-gradient(135deg, ${aura.color}, ${aura.color}, ${aura.color})`
+        };
+      }
     }
     
-    // Fallback to defaults
+    // Fallback to default colors if no aura data is found
+    console.warn('No valid aura data found, using default colors');
     return {
-      color: 'linear-gradient(45deg, #7B1FA2, #BA68C8)',
-      shape: 'soft'
+      colors: ['#6F6FFF', '#FF6F6F', '#FF6F6F'],
+      gradientString: 'linear-gradient(135deg, #6F6FFF, #FF6F6F, #FF6F6F)'
     };
   };
 
-  const auraData = getAuraData();
+  const auraData = getAuraData({ location });
   
-  // Extract both colors from the gradient
-  let startColor = "#7B1FA2"; // Default primary color
-  let endColor = "#BA68C8"; // Default secondary color
+  // Extract all three colors
+  let startColor = auraData.colors[0] || "#7B1FA2"; // Default primary color
+  let middleColor = auraData.colors[1] || "#BA68C8"; // Default secondary color
+  let endColor = auraData.colors[2] || "#E1BEE7"; // Default tertiary color
   
-  if (auraData.color) {
-    try {
-      // Check if it's a gradient
-      if (auraData.color.includes('linear-gradient')) {
-        // Extract both colors from gradient
-        const colors = auraData.color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
-        if (colors && colors.length >= 2) {
-          startColor = colors[0];
-          endColor = colors[1];
-        } else if (colors && colors.length === 1) {
-          startColor = colors[0];
-        }
-      } else {
-        // Use the color directly
-        startColor = auraData.color;
-        endColor = auraData.color; 
-      }
-    } catch (e) {
-      console.error("Error parsing aura color:", e);
-    }
-  }
-
   // Determine marker size based on zoom level
   const getMarkerSize = () => {
     // Base size that is increased if hovered
@@ -142,12 +174,21 @@ function AuraLocationMarker({ location, position, onClick, zoom = 15, isExpanded
   const anchorX = svgWidth / 2;
   const anchorY = size;
   
+  // Get the appropriate aura shape based on location data
+  const shape = location.aura_shape || 'flowing';
+  const colorObject = {
+    color1: startColor,
+    color2: middleColor,
+    color3: endColor
+  };
+
   // Create SVG with the extracted gradient colors
   const svgContent = `
     <svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 50 65" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="auraGrad" x1="0%" y1="0%" x2="100%" y2="100%" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stop-color="${startColor}"/>
+          <stop offset="50%" stop-color="${middleColor}"/>
           <stop offset="100%" stop-color="${endColor}"/>
         </linearGradient>
         <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
@@ -173,7 +214,7 @@ function AuraLocationMarker({ location, position, onClick, zoom = 15, isExpanded
       
       <!-- Aura circle -->
       <circle cx="25" cy="25" r="22" fill="url(#auraGrad)" 
-        filter="${auraData.shape === 'soft' ? 'url(#softGlow)' : 'url(#glow)'}" />
+        filter="${shape === 'soft' ? 'url(#softGlow)' : 'url(#glow)'}" />
       
       ${isHighlighted ? `
       <!-- Static highlight ring (no animation) -->

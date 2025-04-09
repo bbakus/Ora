@@ -116,6 +116,51 @@ function AuraQuestionnaire() {
                 {text: 'Blue', value: 'purple'},
                 {text: 'Brown or other', value: 'gold'}
             ]
+        },
+        {
+            id: 11,
+            question: 'How does someone earn your trust?',
+            options: [
+                {text: 'Gradually, over time.', value: 'gold'},
+                {text: 'I feel known, understood.', value: 'orange'},
+                {text: 'I hardly trust anyone.', value: 'purple'}
+            ]
+        },
+        {
+            id: 12,
+            question: 'Your trip is paid for, where do you go?',
+            options: [
+                {text: 'Mountains', value: 'green'},
+                {text: 'Beach', value: 'cyan'},
+                {text: 'Somewhere new', value: 'red'}
+            ]
+        },
+        {
+            id: 13,
+            question: 'Your landlord decides to not charge you rent.',
+            options: [
+                {text: 'Throw a rager', value: 'red'},
+                {text: 'Buy something nice for myself.', value: 'purple'},
+                {text: 'Put it in savings.', value: 'blue'}
+            ]
+        },
+        {
+            id: 14,
+            question: `You find a tortoise lying on it's back, do you...`,
+            options: [
+                {text: 'Flip it over.', value: 'gold'},
+                {text: 'Keep walking.', value: 'purple'},
+                {text: 'Take a selfie with it.', value: 'red'}
+            ]
+        },
+        {
+            id: 15,
+            question: 'You are home from work do you:',
+            options: [
+                {text: 'Sit on the couch with a beer.', value: 'green'},
+                {text: 'Going out with the homies!', value: 'red'},
+                {text: 'Call your mom.', value: 'gold'}
+            ]
         }
     ];
 

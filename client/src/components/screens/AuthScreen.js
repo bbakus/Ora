@@ -35,7 +35,8 @@ function AuthScreen() {
                 // Use string ID if available, otherwise fall back to regular ID
                 const userId = userData.id_str || userData.id;
                 
-                const path = `/auth/${userId}/dashboard`;
+                // Redirect to daily mood questionnaire instead of dashboard
+                const path = `/auth/${userId}/daily-mood`;
                 console.log("Navigating to:", path);
                 navigate(path);
             } else {

@@ -263,7 +263,7 @@ function DashboardScreen() {
                         const processedData = {
                             ...storedUserData,
                             username: storedUserData.username || "User",
-                            aura_color: storedUserData.aura_color || storedUserData.auraColor || 'linear-gradient(to right, #6d4aff, #9e8aff)',
+                            aura_color: storedUserData.aura_color || storedUserData.auraColor || 'linear-gradient(125deg, #6d4aff, #9e8aff)',
                             aura_shape: storedUserData.aura_shape || storedUserData.auraShape || determineAuraShape(5),
                             response_speed: storedUserData.response_speed || storedUserData.responseSpeed || 'medium'
                         };
@@ -285,7 +285,7 @@ function DashboardScreen() {
                         const processedData = {
                             ...storedUserData,
                             username: storedUserData.username || "User",
-                            aura_color: storedUserData.aura_color || storedUserData.auraColor || 'linear-gradient(to right, #6d4aff, #9e8aff)',
+                            aura_color: storedUserData.aura_color || storedUserData.auraColor || 'linear-gradient(125deg, #6d4aff, #9e8aff)',
                             aura_shape: storedUserData.aura_shape || storedUserData.auraShape || determineAuraShape(5),
                             response_speed: storedUserData.response_speed || storedUserData.responseSpeed || 'medium'
                         };
@@ -297,14 +297,42 @@ function DashboardScreen() {
                 }
                 
                 const data = await response.json();
-                console.log("User data received:", data);
+                console.log("API Response data:", data);
+                
+                // Ensure we have valid aura data
+                if (!data.aura_color || !data.aura_color.includes('gradient')) {
+                    console.warn("Invalid or missing aura color gradient, using default");
+                    
+                    // Extract any individual colors that might be available
+                    const colors = [];
+                    if (data.aura_color1) colors.push(data.aura_color1);
+                    if (data.aura_color2) colors.push(data.aura_color2);
+                    if (data.aura_color3) colors.push(data.aura_color3);
+                    
+                    // If we have colors, create gradient from them
+                    if (colors.length > 0) {
+                        while (colors.length < 3) {
+                            colors.push(colors[colors.length - 1] || '#0000FF');
+                        }
+                        data.aura_color = `linear-gradient(45deg, ${colors.join(', ')})`;
+                    } else {
+                        // Default gradient
+                        data.aura_color = 'linear-gradient(45deg, #0000FF, #800080, #00FF00)';
+                    }
+                }
+                
+                // Ensure we have valid shape
+                if (!data.aura_shape || !['sparkling', 'flowing', 'pulsing', 'balanced'].includes(data.aura_shape)) {
+                    console.warn("Invalid or missing aura shape, using default");
+                    data.aura_shape = 'balanced';
+                }
                 
                 const processedData = {
                     ...data,
                     username: data.username || "User",
-                    aura_color: data.aura_color || 'linear-gradient(to right, #6d4aff, #9e8aff)',
-                    aura_shape: data.aura_shape || determineAuraShape(data.answer_speed),
-                    response_speed: data.response_speed || 'medium'
+                    aura_color: data.aura_color,
+                    aura_shape: data.aura_shape,
+                    response_speed: 'medium' // Always force to medium
                 };
                 
                 setUserData(processedData);
@@ -607,7 +635,7 @@ function DashboardScreen() {
                 body: JSON.stringify({
                     user_id: parseInt(userId),
                     name: name,
-                    aura_color: auraColor || 'linear-gradient(to right, #6d4aff, #9e8aff)'
+                    aura_color: auraColor || 'linear-gradient(125deg, #6d4aff, #9e8aff)'
                 }),
             });
             
@@ -629,7 +657,7 @@ function DashboardScreen() {
             const newCollection = {
                 id: Date.now().toString(), // Simple ID generation
                 name,
-                aura_color: auraColor || 'linear-gradient(to right, #6d4aff, #9e8aff)',
+                aura_color: auraColor || 'linear-gradient(125deg, #6d4aff, #9e8aff)',
                 location_count: 0,
                 locations: []
             };
@@ -864,11 +892,11 @@ function DashboardScreen() {
         
         return recentLocations.map(location => {
             // Determine aura gradient using the same logic as for collections
-            let auraColor = 'linear-gradient(to right, #6d4aff, #9e8aff)'; // Default
+            let auraColor = 'linear-gradient(125deg, #6d4aff, #9e8aff)'; // Default
             
             // Method 1: Check for aura_color1 and aura_color2
             if (location.aura_color1 && location.aura_color2) {
-                auraColor = `linear-gradient(to right, ${location.aura_color1}, ${location.aura_color2})`;
+                auraColor = `linear-gradient(125deg, ${location.aura_color1}, ${location.aura_color2})`;
             }
             // Method 2: Check for gradient string in aura_color
             else if (location.aura_color) {
@@ -880,16 +908,16 @@ function DashboardScreen() {
                 else {
                     const colors = location.aura_color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
                     if (colors && colors.length >= 2) {
-                        auraColor = `linear-gradient(to right, ${colors[0]}, ${colors[1]})`;
+                        auraColor = `linear-gradient(125deg, ${colors[0]}, ${colors[1]})`;
                     } else if (colors && colors.length === 1) {
-                        auraColor = `linear-gradient(to right, ${colors[0]}, ${colors[0]})`;
+                        auraColor = `linear-gradient(125deg, ${colors[0]}, ${colors[0]})`;
                     }
                 }
             }
             // Method 3: Check for aura object
             else if (location.aura) {
                 if (location.aura.color1 && location.aura.color2) {
-                    auraColor = `linear-gradient(to right, ${location.aura.color1}, ${location.aura.color2})`;
+                    auraColor = `linear-gradient(125deg, ${location.aura.color1}, ${location.aura.color2})`;
                 } else if (location.aura.color) {
                     // If it's already a gradient string, use it directly
                     if (location.aura.color.includes('gradient')) {
@@ -899,9 +927,9 @@ function DashboardScreen() {
                     else {
                         const colors = location.aura.color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
                         if (colors && colors.length >= 2) {
-                            auraColor = `linear-gradient(to right, ${colors[0]}, ${colors[1]})`;
+                            auraColor = `linear-gradient(125deg, ${colors[0]}, ${colors[1]})`;
                         } else if (colors && colors.length === 1) {
-                            auraColor = `linear-gradient(to right, ${colors[0]}, ${colors[0]})`;
+                            auraColor = `linear-gradient(125deg, ${colors[0]}, ${colors[0]})`;
                         }
                     }
                 }
@@ -992,7 +1020,7 @@ function DashboardScreen() {
         
         return collections.map(collection => {
             // Default aura color for the collection
-            let auraColor = collection.aura_color || 'linear-gradient(to right, #6d4aff, #9e8aff)';
+            let auraColor = collection.aura_color || 'linear-gradient(125deg, #6d4aff, #9e8aff)';
             
             // Extract aura color from the first location if available
             if (collection.locations && collection.locations.length > 0) {
@@ -1009,7 +1037,7 @@ function DashboardScreen() {
                 
                 // Method 1: Check for aura_color1 and aura_color2
                 if (firstLocation.aura_color1 && firstLocation.aura_color2) {
-                    auraColor = `linear-gradient(to right, ${firstLocation.aura_color1}, ${firstLocation.aura_color2})`;
+                    auraColor = `linear-gradient(125deg, ${firstLocation.aura_color1}, ${firstLocation.aura_color2})`;
                     console.log(`Using Method 1: aura_color1 & aura_color2 for ${collection.name}`, auraColor);
                 }
                 // Method 2: Check for gradient string in aura_color
@@ -1023,10 +1051,10 @@ function DashboardScreen() {
                     else {
                         const colors = firstLocation.aura_color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
                         if (colors && colors.length >= 2) {
-                            auraColor = `linear-gradient(to right, ${colors[0]}, ${colors[1]})`;
+                            auraColor = `linear-gradient(45deg, ${colors[0]}, ${colors[1]})`;
                             console.log(`Using Method 2b: extracted colors for ${collection.name}`, auraColor);
                         } else if (colors && colors.length === 1) {
-                            auraColor = `linear-gradient(to right, ${colors[0]}, ${colors[0]})`;
+                            auraColor = `linear-gradient(45deg, ${colors[0]}, ${colors[0]})`;
                             console.log(`Using Method 2c: single extracted color for ${collection.name}`, auraColor);
                         }
                     }
@@ -1034,7 +1062,7 @@ function DashboardScreen() {
                 // Method 3: Check for aura object
                 else if (firstLocation.aura) {
                     if (firstLocation.aura.color1 && firstLocation.aura.color2) {
-                        auraColor = `linear-gradient(to right, ${firstLocation.aura.color1}, ${firstLocation.aura.color2})`;
+                        auraColor = `linear-gradient(125deg, ${firstLocation.aura.color1}, ${firstLocation.aura.color2})`;
                         console.log(`Using Method 3a: aura.color1 & aura.color2 for ${collection.name}`, auraColor);
                     } else if (firstLocation.aura.color) {
                         // If it's already a gradient string, use it directly
@@ -1046,10 +1074,10 @@ function DashboardScreen() {
                         else {
                             const colors = firstLocation.aura.color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
                             if (colors && colors.length >= 2) {
-                                auraColor = `linear-gradient(to right, ${colors[0]}, ${colors[1]})`;
+                                auraColor = `linear-gradient(125deg, ${colors[0]}, ${colors[1]})`;
                                 console.log(`Using Method 3c: extracted colors from aura.color for ${collection.name}`, auraColor);
                             } else if (colors && colors.length === 1) {
-                                auraColor = `linear-gradient(to right, ${colors[0]}, ${colors[0]})`;
+                                auraColor = `linear-gradient(125deg, ${colors[0]}, ${colors[0]})`;
                                 console.log(`Using Method 3d: single extracted color from aura.color for ${collection.name}`, auraColor);
                             }
                         }
@@ -1153,7 +1181,7 @@ function DashboardScreen() {
                             location: placeLocation,
                             vicinity: place.vicinity,
                             types: place.types || [],
-                            aura_color: `linear-gradient(to right, ${color1}, ${color2})`,
+                            aura_color: `linear-gradient(125deg, ${color1}, ${color2})`,
                             aura_color1: color1,
                             aura_color2: color2
                         };
