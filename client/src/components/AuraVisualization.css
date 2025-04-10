@@ -55,6 +55,8 @@
     /* All shapes keep the same circular canvas base */
     border-radius: 50% !important; 
     transition: all 0.5s ease;
+    width: 100% !important;  /* Ensure all shapes have same width */
+    height: 100% !important; /* Ensure all shapes have same height */
 }
 
 /* Animation type styles */
@@ -285,10 +287,10 @@
 /* FLOWING ANIMATION - orbital circles around the aura */
 .aura-decoration-flowing {
     position: absolute;
-    width: 150% !important;
-    height: 150% !important;
-    top: -25% !important;
-    left: -25% !important;
+    width: 130% !important; /* Changed from 150% to 100% to match other shapes */
+    height: 130% !important; /* Changed from 150% to 100% to match other shapes */
+    top: -15% !important; /* Changed from -25% to 0 to match other shapes */
+    left: -13% !important; /* Changed from -25% to 0 to match other shapes */
     border-radius: 50%;
     overflow: visible !important;
     z-index: 10 !important;

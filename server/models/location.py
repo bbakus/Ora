@@ -1,6 +1,8 @@
 from server.extensions import db
 from server.models.location_tag import location_tags
 from datetime import datetime
+from sqlalchemy.orm import validates
+import re
 
 class Location(db.Model):
     __tablename__ = 'locations'
@@ -38,6 +40,57 @@ class Location(db.Model):
     
     # Define the one-to-many relationship with reviews
     reviews = db.relationship('Review', back_populates='location', lazy=True, cascade="all, delete-orphan")
+    
+    @validates('name')
+    def validate_name(self, key, name):
+        if not name:
+            raise ValueError('Location name cannot be empty')
+        if len(name) > 255:
+            raise ValueError('Location name is too long (max 255 characters)')
+        return name
+    
+    @validates('latitude')
+    def validate_latitude(self, key, lat):
+        if not -90 <= lat <= 90:
+            raise ValueError('Latitude must be between -90 and 90')
+        return lat
+    
+    @validates('longitude')
+    def validate_longitude(self, key, lng):
+        if not -180 <= lng <= 180:
+            raise ValueError('Longitude must be between -180 and 180')
+        return lng
+    
+    @validates('rating')
+    def validate_rating(self, key, rating):
+        if rating is not None and not (0 <= rating <= 5):
+            raise ValueError('Rating must be between 0 and 5')
+        return rating
+    
+    @validates('website')
+    def validate_website(self, key, website):
+        if website and not website.startswith(('http://', 'https://')):
+            raise ValueError('Website must start with http:// or https://')
+        return website
+    
+    @validates('price_level')
+    def validate_price_level(self, key, price):
+        if price is not None and not (0 <= price <= 4):
+            raise ValueError('Price level must be between 0 and 4')
+        return price
+    
+    @validates('aura_color1', 'aura_color2', 'aura_color3')
+    def validate_aura_color_components(self, key, color):
+        if color and not re.match(r'^#[0-9A-Fa-f]{3,6}$', color):
+            raise ValueError(f'Invalid hex color format for {key}')
+        return color
+    
+    @validates('aura_shape')
+    def validate_aura_shape(self, key, shape):
+        valid_shapes = ['sparkling', 'flowing', 'pulsing', 'balanced']
+        if shape and shape not in valid_shapes:
+            raise ValueError(f'Invalid aura shape: must be one of {", ".join(valid_shapes)}')
+        return shape
     
     def __repr__(self):
         return f'<Location {self.name} at {self.latitude},{self.longitude}>'
@@ -91,7 +144,6 @@ class Location(db.Model):
             # Extract aura colors for frontend
             if aura_tag.color and 'gradient' in aura_tag.color:
                 # Extract hex colors from gradient string
-                import re
                 color_matches = re.findall(r'#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}', aura_tag.color)
                 if len(color_matches) >= 3:
                     location_dict['aura_color1'] = color_matches[0]

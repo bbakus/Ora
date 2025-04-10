@@ -2,6 +2,8 @@ from server.extensions import db
 from . import BaseModel
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from sqlalchemy.orm import validates
+import re
 
 # Define the friendship association table
 friendships = db.Table('friendships',
@@ -38,6 +40,42 @@ class User(BaseModel):
         backref=db.backref('befriended_by', lazy='dynamic'),
         lazy='dynamic'
     )
+
+    @validates('username')
+    def validate_username(self, key, username):
+        if not username:
+            raise ValueError('Username cannot be empty')
+        if len(username) < 3:
+            raise ValueError('Username must be at least 3 characters')
+        if len(username) > 80:
+            raise ValueError('Username must be less than 80 characters')
+        return username
+    
+    @validates('email')
+    def validate_email(self, key, email):
+        if not email:
+            raise ValueError('Email cannot be empty')
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            raise ValueError('Invalid email format')
+        return email
+    
+    @validates('aura_color')
+    def validate_aura_color(self, key, color):
+        if color and not (color.startswith('#') or color.startswith('linear-gradient')):
+            raise ValueError('Aura color must be a hex code or gradient')
+        return color
+        
+    @validates('aura_shape')
+    def validate_aura_shape(self, key, shape):
+        if shape and shape not in ['sparkling', 'flowing', 'pulsing', 'balanced']:
+            raise ValueError('Invalid aura shape')
+        return shape
+        
+    @validates('response_speed')
+    def validate_response_speed(self, key, speed):
+        if speed and speed not in ['fast', 'medium-fast', 'medium', 'medium-slow', 'slow']:
+            raise ValueError('Invalid response speed')
+        return speed
 
     def set_password(self, password):
         self.hashed_password = generate_password_hash(password)

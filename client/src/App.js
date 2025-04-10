@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, createContext, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -24,8 +24,16 @@ import DailyMoodQuestionnaire from './components/screens/DailyMood/DailyMoodQues
 
 import { loadSansationFont } from './components/utils/FontLoader';
 
+// Create a simple context for the app
+export const AppContext = createContext(null);
 
 function App() {
+  // Add a simple state for the context
+  const [appState, setAppState] = useState({
+    theme: 'dark',
+    // Add any other global state you might want to share
+  });
+
   console.log("App rendered, available routes:");
   
   // Load the custom font and Material Icons when the component mounts
@@ -68,35 +76,37 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <MobileContainer>
-          <Box sx={{ 
-            width: '100%', 
-            minHeight: '100vh',
-            backgroundColor: '#121212',
-            color: '#f5f5f5',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <Routes>
-              {/* Auth Flow */}
-              <Route path="/" element={<LandingScreen />} />
-              <Route path="/auth" element={<AuthScreen />} />
-              <Route path="/signup" element={<SignupScreen />} />
-              <Route path="/auth/:userId/dashboard" element={<DashboardScreen />} />
-              <Route path="/auth/:userId/questionnaire" element={<AuraQuestionnaire/>} />
-              <Route path="/auth/:userId/daily-mood" element={<DailyMoodQuestionnaire />} />
-              
-              {/* Main App */}
-              <Route path="/discover" element={<DiscoverScreen />} />
-              <Route path="/discover/:userId" element={<DiscoverScreen />} />
-              <Route path="/collections" element={<CollectionsScreen />} />
-              <Route path="/about-auras" element={<AboutAurasScreen />} />
-              <Route path="/aura-guide" element={<AuraGuideScreen />} />
-            </Routes>
-          </Box>
-        </MobileContainer>
-      </Router>
+      <AppContext.Provider value={{ appState, setAppState }}>
+        <Router>
+          <MobileContainer>
+            <Box sx={{ 
+              width: '100%', 
+              minHeight: '100vh',
+              backgroundColor: '#121212',
+              color: '#f5f5f5',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Routes>
+                {/* Auth Flow */}
+                <Route path="/" element={<LandingScreen />} />
+                <Route path="/auth" element={<AuthScreen />} />
+                <Route path="/signup" element={<SignupScreen />} />
+                <Route path="/auth/:userId/dashboard" element={<DashboardScreen />} />
+                <Route path="/auth/:userId/questionnaire" element={<AuraQuestionnaire/>} />
+                <Route path="/auth/:userId/daily-mood" element={<DailyMoodQuestionnaire />} />
+                
+                {/* Main App */}
+                <Route path="/discover" element={<DiscoverScreen />} />
+                <Route path="/discover/:userId" element={<DiscoverScreen />} />
+                <Route path="/collections" element={<CollectionsScreen />} />
+                <Route path="/about-auras" element={<AboutAurasScreen />} />
+                <Route path="/aura-guide" element={<AuraGuideScreen />} />
+              </Routes>
+            </Box>
+          </MobileContainer>
+        </Router>
+      </AppContext.Provider>
     </ThemeProvider>
   );
 }

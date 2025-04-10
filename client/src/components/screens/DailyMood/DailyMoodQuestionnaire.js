@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import './DailyMoodQuestionnaire.css';
 
+// Shape types for aura visualization
+const SHAPE_TYPES = ['balanced', 'flowing', 'sparkling', 'pulsing'];
+
 // Default questions to use if API fails completely
 const DEFAULT_QUESTIONS = [
   {
@@ -70,6 +73,10 @@ function DailyMoodQuestionnaire() {
     const [showColorEffect, setShowColorEffect] = useState(false);
     const [selectedColor, setSelectedColor] = useState(null);
     const [colorButtonIndex, setColorButtonIndex] = useState(null);
+    
+    // For testing aura shape generation - disabled by default
+    const useCustomShape = false;
+    const forcedShapeIndex = 0; // 0 = balanced, 1 = flowing, 2 = sparkling, 3 = pulsing
     
     // Add a color map with hex values for each color - UPDATED to match AuraQuestionnaire.js
     const colorMap = {

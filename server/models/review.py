@@ -1,6 +1,7 @@
 from server.extensions import db
 from . import BaseModel
 from sqlalchemy import ForeignKey
+from sqlalchemy.orm import validates
 
 
 class Review(BaseModel):
@@ -14,6 +15,30 @@ class Review(BaseModel):
 
     user = db.relationship('User', back_populates='reviews')
     location = db.relationship('Location', back_populates='reviews')
+    
+    @validates('body')
+    def validate_body(self, key, body):
+        if not body:
+            raise ValueError('Review body cannot be empty')
+        if len(body) < 10:
+            raise ValueError('Review body must be at least 10 characters')
+        if len(body) > 1000:
+            raise ValueError('Review body cannot exceed 1000 characters')
+        return body
+    
+    @validates('rating')
+    def validate_rating(self, key, rating):
+        if not isinstance(rating, int):
+            raise ValueError('Rating must be an integer')
+        if not 1 <= rating <= 5:
+            raise ValueError('Rating must be between 1 and 5')
+        return rating
+    
+    @validates('user_id', 'location_id')
+    def validate_ids(self, key, value):
+        if not value:
+            raise ValueError(f'{key} cannot be empty')
+        return value
 
     def to_dict(self):
         """Convert review to dictionary for JSON response"""
