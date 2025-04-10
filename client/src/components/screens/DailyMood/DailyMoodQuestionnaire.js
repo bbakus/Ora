@@ -277,31 +277,49 @@ function DailyMoodQuestionnaire() {
     
     // Update the calculateAuraShape function to align with the user's requirements
     const calculateAuraShape = (times = null) => {
+        // If test mode is enabled, use the selected shape type
+        if (useCustomShape) {
+            const forcedShape = SHAPE_TYPES[forcedShapeIndex];
+            console.log(`USING FORCED SHAPE: ${forcedShape}`);
+            return forcedShape;
+        }
+        
         const timeValues = times || responseTimes;
         
         if (timeValues.length === 0) return 'balanced';
-
+        
+        console.log("All response times (ms):", timeValues);
         const avgResponseTime = timeValues.reduce((a, b) => a + b, 0) / timeValues.length;
         console.log("Average response time:", avgResponseTime);
         
-        // Define thresholds (in milliseconds)
-        const FAST_THRESHOLD = 2000;  // 2 seconds - sparkling
-        const MEDIUM_FAST_THRESHOLD = 3000;  // 3 seconds - flowing
-        const MEDIUM_THRESHOLD = 4000;  // 4 seconds - pulsing
-        // everything > MEDIUM_THRESHOLD is balanced/glowing
+        // Define thresholds (in milliseconds) - UPDATED per request
+        const FAST_THRESHOLD = 2000;      // 2 seconds - sparkling (fast)
+        const MEDIUM_THRESHOLD = 3500;    // 3.5 seconds - flowing (medium)
+        const SLOW_THRESHOLD = 5000;      // 5 seconds - pulsing (slow)
+        // everything > SLOW_THRESHOLD is balanced (very slow)
+        
+        console.log("Threshold comparison:", {
+            avgResponseTime,
+            FAST_THRESHOLD,
+            MEDIUM_THRESHOLD,
+            SLOW_THRESHOLD,
+            "is < FAST_THRESHOLD": avgResponseTime < FAST_THRESHOLD,
+            "is < MEDIUM_THRESHOLD": avgResponseTime < MEDIUM_THRESHOLD,
+            "is < SLOW_THRESHOLD": avgResponseTime < SLOW_THRESHOLD
+        });
 
         if (avgResponseTime < FAST_THRESHOLD) {
             console.log("Shape: sparkling (FAST)");
             return 'sparkling';  // Fast, energetic responses
-        } else if (avgResponseTime < MEDIUM_FAST_THRESHOLD) {
-            console.log("Shape: flowing (MEDIUM FAST)");
-            return 'flowing';    // Medium-fast, flowing responses
         } else if (avgResponseTime < MEDIUM_THRESHOLD) {
-            console.log("Shape: pulsing (MEDIUM)");
-            return 'pulsing';    // Medium, dynamic responses
+            console.log("Shape: flowing (MEDIUM)");
+            return 'flowing';    // Medium responses
+        } else if (avgResponseTime < SLOW_THRESHOLD) {
+            console.log("Shape: pulsing (SLOW)");
+            return 'pulsing';    // Slow responses
         } else {
-            console.log("Shape: balanced (SLOW)");
-            return 'balanced';   // Slow, thoughtful responses
+            console.log("Shape: balanced (VERY SLOW)");
+            return 'balanced';   // Very slow, thoughtful responses
         }
     };
     

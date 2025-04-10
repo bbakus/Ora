@@ -60,84 +60,47 @@
 /* Animation type styles */
 .aura-shape-sparkling {
     /* Style for sparkling particles */
-    filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.8));
+    filter: none;
 }
 
 .aura-shape-flowing {
     /* Style for flowing ripples */
-    filter: drop-shadow(0 0 14px rgba(180, 200, 255, 0.7));
+    filter: none;
 }
 
 .aura-shape-pulsing {
     /* Style for pulsing effect */
-    filter: drop-shadow(0 0 18px rgba(220, 220, 255, 0.75));
+    filter: none;
 }
 
 .aura-shape-balanced {
     /* Style for the balanced circle */
-    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.8));
+    filter: none;
 }
 
 /* Animation speed styles */
 .aura-shape-fast {
     /* Style for fast animations */
-    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.7));
-    animation: fast-pulse 2s infinite alternate;
+    filter: none;
+    animation: none;
 }
 
 .aura-shape-medium-fast {
     /* Style for medium-fast animations */
-    filter: drop-shadow(0 0 12px rgba(200, 200, 255, 0.8));
-    animation: medium-fast-pulse 3s infinite alternate;
+    filter: none;
+    animation: none;
 }
 
 .aura-shape-medium-slow {
     /* Style for medium-slow animations */
-    filter: drop-shadow(0 0 10px rgba(180, 180, 255, 0.6));
-    animation: medium-slow-pulse 4s infinite alternate;
+    filter: none;
+    animation: none;
 }
 
 .aura-shape-slow {
     /* Style for slow animations */
-    filter: drop-shadow(0 0 8px rgba(160, 160, 255, 0.5));
-    animation: slow-pulse 5s infinite alternate;
-}
-
-/* Keyframe animations for different speeds */
-@keyframes fast-pulse {
-    0% {
-        filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.7));
-    }
-    100% {
-        filter: drop-shadow(0 0 25px rgba(255, 255, 255, 0.9));
-    }
-}
-
-@keyframes medium-fast-pulse {
-    0% {
-        filter: drop-shadow(0 0 12px rgba(200, 200, 255, 0.8));
-    }
-    100% {
-        filter: drop-shadow(0 0 20px rgba(200, 200, 255, 0.9));
-    }
-}
-
-@keyframes medium-slow-pulse {
-    0% {
-        filter: drop-shadow(0 0 10px rgba(180, 180, 255, 0.6));
-    }
-    100% {
-        filter: drop-shadow(0 0 18px rgba(180, 180, 255, 0.8));
-    }
-}
-
-@keyframes slow-pulse {
-    0% {
-        filter: drop-shadow(0 0 8px rgba(160, 160, 255, 0.5));
-    }
-    100% {
-        filter: drop-shadow(0 0 16px rgba(160, 160, 255, 0.7));
-    }
+    filter: none;
+    animation: none;
 }
 
 /* Animation decorations - base container */
@@ -482,24 +445,6 @@
 /* BALANCED ANIMATION - soft breathing glow */
 .balanced-glow {
     position: absolute;
-    top: -15%;
-    left: -15%;
-    width: 130%;
-    height: 130%;
-    border-radius: 50%;
-    background: radial-gradient(
-        circle,
-        rgba(255, 255, 255, 0.3) 0%,
-        rgba(255, 255, 255, 0.1) 40%,
-        rgba(255, 255, 255, 0) 70%
-    );
-    opacity: 0.6;
-    filter: blur(8px);
-    animation: balanced-breath 4s infinite alternate ease-in-out;
-}
-
-.balanced-glow-inner {
-    position: absolute;
     top: -5%;
     left: -5%;
     width: 110%;
@@ -507,12 +452,13 @@
     border-radius: 50%;
     background: radial-gradient(
         circle,
-        rgba(255, 255, 255, 0.2) 0%,
-        rgba(255, 255, 255, 0.1) 30%,
-        rgba(255, 255, 255, 0) 60%
+        rgba(255, 255, 255, 0.4) 0%,
+        rgba(255, 255, 255, 0.2) 60%,
+        rgba(255, 255, 255, 0) 90%
     );
-    filter: blur(5px);
-    animation: balanced-breath 6s infinite alternate-reverse ease-in-out;
+    opacity: 0.8;
+    filter: blur(8px);
+    animation: balanced-breath 2s infinite alternate ease-in-out;
 }
 
 @keyframes balanced-breath {
@@ -521,8 +467,8 @@
         transform: scale(0.95);
     }
     100% {
-        opacity: 0.7;
-        transform: scale(1.05);
+        opacity: 1;
+        transform: scale(1.1);
     }
 }
 

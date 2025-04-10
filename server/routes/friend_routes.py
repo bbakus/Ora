@@ -152,41 +152,113 @@ class FriendRequestResource(Resource):
         Query parameter: user_id - The user to get requests for
         Query parameter: type - Either 'sent' or 'received'
         """
-        user_id = request.args.get('user_id')
-        request_type = request.args.get('type', 'received')  # Default to received
-        
-        if not user_id:
-            return {'error': 'Missing user_id parameter'}, 400
-        
-        # Get either sent or received requests
-        if request_type == 'sent':
-            requests = FriendRequest.query.filter_by(
-                sender_id=user_id,
-                status='pending'
-            ).all()
-        else:  # 'received'
-            requests = FriendRequest.query.filter_by(
-                receiver_id=user_id,
-                status='pending'
-            ).all()
-        
-        # Convert to list of dictionaries
-        request_list = []
-        
-        for req in requests:
-            user = User.query.get(req.receiver_id if request_type == 'sent' else req.sender_id)
+        try:
+            print("\n### GETTING FRIEND REQUESTS - START ###")
+            user_id = request.args.get('user_id')
+            request_type = request.args.get('type', 'received')  # Default to received
             
-            if user:
-                request_list.append({
-                    'id': req.id,
-                    'user_id': user.id,
-                    'username': user.username,
-                    'aura_color': user.aura_color,
-                    'aura_shape': user.aura_shape,
-                    'created_at': req.created_at.isoformat() if hasattr(req, 'created_at') else None
-                })
-        
-        return request_list, 200
+            print(f"user_id: {user_id}, type: {request_type}")
+            
+            if not user_id:
+                print("ERROR: Missing user_id parameter")
+                return {'error': 'Missing user_id parameter'}, 400
+            
+            print(f"Starting database query for {request_type} requests...")
+            # Get either sent or received requests
+            if request_type == 'sent':
+                print(f"Querying for sent requests from user_id={user_id}")
+                try:
+                    requests = FriendRequest.query.filter_by(
+                        sender_id=user_id,
+                        status='pending'
+                    ).all()
+                    print(f"Query successful, found {len(requests)} sent requests")
+                except Exception as db_error:
+                    print(f"DATABASE ERROR IN QUERY: {str(db_error)}")
+                    return {'error': f'Database query error: {str(db_error)}'}, 500
+            else:  # 'received'
+                print(f"Querying for received requests for user_id={user_id}")
+                try:
+                    requests = FriendRequest.query.filter_by(
+                        receiver_id=user_id,
+                        status='pending'
+                    ).all()
+                    print(f"Query successful, found {len(requests)} received requests")
+                except Exception as db_error:
+                    print(f"DATABASE ERROR IN QUERY: {str(db_error)}")
+                    return {'error': f'Database query error: {str(db_error)}'}, 500
+            
+            # Convert to list of dictionaries
+            print("Beginning to process requests...")
+            request_list = []
+            
+            for i, req in enumerate(requests):
+                print(f"Processing request {i+1}/{len(requests)} (ID: {req.id})")
+                
+                try:
+                    # Determine which user to look up
+                    other_user_id = req.receiver_id if request_type == 'sent' else req.sender_id
+                    print(f"Looking up user with ID {other_user_id}")
+                    
+                    # Query the user
+                    user = User.query.get(other_user_id)
+                    print(f"User query returned: {user}")
+                    
+                    if user:
+                        print(f"Building data for user {user.id} ({user.username if hasattr(user, 'username') else 'unknown'})")
+                        request_data = {
+                            'id': req.id,
+                            'user_id': user.id,
+                        }
+                        
+                        # Add username if available
+                        if hasattr(user, 'username'):
+                            request_data['username'] = user.username
+                            print(f"Added username: {user.username}")
+                        else:
+                            print("WARNING: User has no username attribute")
+                        
+                        # Add aura color if available
+                        if hasattr(user, 'aura_color'):
+                            request_data['aura_color'] = user.aura_color
+                            print(f"Added aura_color: {user.aura_color}")
+                        else:
+                            print("WARNING: User has no aura_color attribute")
+                        
+                        # Add aura shape if available
+                        if hasattr(user, 'aura_shape'):
+                            request_data['aura_shape'] = user.aura_shape
+                            print(f"Added aura_shape: {user.aura_shape}")
+                        else:
+                            print("WARNING: User has no aura_shape attribute")
+                        
+                        # Add creation timestamp if available
+                        if hasattr(req, 'created_at') and req.created_at is not None:
+                            try:
+                                request_data['created_at'] = req.created_at.isoformat()
+                                print(f"Added created_at: {req.created_at.isoformat()}")
+                            except Exception as time_error:
+                                print(f"ERROR formatting created_at: {str(time_error)}")
+                        else:
+                            print("WARNING: Request has no created_at attribute or it's None")
+                        
+                        request_list.append(request_data)
+                        print(f"Successfully added request to response list")
+                    else:
+                        print(f"WARNING: User with ID {other_user_id} not found")
+                except Exception as req_error:
+                    print(f"ERROR processing request {req.id}: {str(req_error)}")
+                    # Continue processing other requests
+            
+            print(f"Finished processing all requests. Returning {len(request_list)} results.")
+            print("### GETTING FRIEND REQUESTS - END ###\n")
+            return request_list, 200
+            
+        except Exception as e:
+            print(f"CRITICAL ERROR in friend requests GET endpoint: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return {'error': f'Server error: {str(e)}'}, 500
     
     def patch(self, request_id):
         """

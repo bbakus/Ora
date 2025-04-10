@@ -530,14 +530,14 @@ function DashboardScreen() {
 
     // Add handler for navigating friends
     const handleNextFriends = () => {
-        const totalPages = Math.ceil(friends.length / 3);
+        const totalPages = Math.ceil(friends.length / 5);
         setCurrentFriendsPage((prevPage) => (prevPage + 1) % totalPages);
     };
     
     // Get the current page of friends to display
     const getCurrentPageFriends = () => {
-        const startIndex = currentFriendsPage * 3;
-        return friends.slice(startIndex, startIndex + 3);
+        const startIndex = currentFriendsPage * 5;
+        return friends.slice(startIndex, startIndex + 5);
     };
 
     // Load collections and recent locations
@@ -1549,8 +1549,8 @@ function DashboardScreen() {
                                         ))}
                                     </div>
                                     
-                                    {/* Only show the navigation button if we have more than 3 friends */}
-                                    {friends.length > 3 && (
+                                    {/* Only show the navigation button if we have more than 5 friends */}
+                                    {friends.length > 5 && (
                                         <button 
                                             className="next-friends-btn" 
                                             onClick={handleNextFriends}

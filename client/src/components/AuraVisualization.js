@@ -164,7 +164,7 @@ const AuraVisualization = ({ auraColor, auraShape, responseSpeed }) => {
                     {validatedShape === 'balanced' && (
                         <>
                             <div className="balanced-glow" />
-                            <div className="balanced-glow-inner" />
+                            
                         </>
                     )}
                     {validatedShape === 'sparkling' && (
