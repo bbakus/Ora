@@ -326,7 +326,7 @@ const LocationModal = ({ location, onClose, onAddToCollection }) => {
       <div className="location-modal" onClick={(e) => e.stopPropagation()}>
         <button className="close-button" onClick={onClose}>×</button>
         
-        <div className="aura-visualization">
+        <div className="location-modal-aura-visualization">
           {renderAuraVisualization()}
         </div>
         

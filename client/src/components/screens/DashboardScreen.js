@@ -7,6 +7,7 @@ import './DashboardScreen.css';
 import AddFriendModal from '../modals/AddFriendModal';
 import FriendRequestsModal from '../modals/FriendRequestsModal';
 import CollectionLocationsModal from '../modals/CollectionLocationsModal';
+import ViewFriendModal from '../modals/ViewFriendModal';
 
 // NYC center coordinates as default
 const DEFAULT_CENTER = {
@@ -229,6 +230,9 @@ function DashboardScreen() {
     // Add state for the collection locations modal
     const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
     const [selectedCollection, setSelectedCollection] = useState(null);
+
+    const [showFriendModal, setShowFriendModal] = useState(false);
+    const [selectedFriendId, setSelectedFriendId] = useState(null);
     
     // Load Google Maps API
     const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
@@ -520,12 +524,10 @@ function DashboardScreen() {
         }
     }, [userData, userId]);
     
-    // Add handler for friend click
+    // Fix the handleFriendClick function
     const handleFriendClick = (friendId) => {
-        // In a real implementation, this might navigate to the friend's profile
-        // or open a chat with the friend
-        console.log(`Clicked on friend: ${friendId}`);
-        alert(`You clicked on a friend! In a real implementation, this might open their profile or a chat.`);
+        setSelectedFriendId(friendId);
+        setShowFriendModal(true);
     };
 
     // Add handler for navigating friends
@@ -539,6 +541,8 @@ function DashboardScreen() {
         const startIndex = currentFriendsPage * 5;
         return friends.slice(startIndex, startIndex + 5);
     };
+
+    
 
     // Load collections and recent locations
     useEffect(() => {
@@ -1432,6 +1436,12 @@ function DashboardScreen() {
         }
     };
 
+    // Add logout handler
+    const handleLogout = () => {
+        localStorage.removeItem('user');
+        navigate('/auth');
+    };
+
     if (loading) {
         return <div className="loading">Loading your aura...</div>;
     }
@@ -1443,17 +1453,16 @@ function DashboardScreen() {
     return (
         <div className="dashboard-container">
             <header className="dashboard-header">
-                <h1>Hello, {userData.username}</h1>
-                <div className="header-buttons">
-                    <button 
-                        className="friend-requests-button"
-                        onClick={handleFriendRequests}
-                    >
-                        <span className="material-icons">mail</span>
-                        Friend Requests
+                <h1>Hello, {userData?.username || 'User'}</h1>
+                <div className="header-right">
+                    <button className="friend-requests-button" onClick={handleFriendRequests}>
+                        <span className="material-icons">group_add</span>
                         {pendingRequestsCount > 0 && (
-                            <span className="request-badge">{pendingRequestsCount}</span>
+                            <span className="request-count">{pendingRequestsCount}</span>
                         )}
+                    </button>
+                    <button className="logout-button" onClick={handleLogout}>
+                        <span className="material-icons">logout</span>
                     </button>
                 </div>
             </header>
@@ -1621,6 +1630,17 @@ function DashboardScreen() {
                 onClose={handleCloseFriendRequestsModal}
                 userId={userId}
             />
+
+            {/* Add ViewFriendModal */}
+            {showFriendModal && (
+                <ViewFriendModal
+                    friendId={selectedFriendId}
+                    onClose={() => {
+                        setShowFriendModal(false);
+                        setSelectedFriendId(null);
+                    }}
+                />
+            )}
         </div>
     );
 }

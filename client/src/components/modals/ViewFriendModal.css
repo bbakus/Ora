@@ -1,0 +1,232 @@
+.view-friend-modal-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.view-friend-modal-content {
+    background-color: #1a1a1a;
+    border-radius: 5%;
+    padding: 3rem;
+    width: 95%;
+    max-width: 1200px;
+    min-height: 50vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.view-friend-modal-close-button {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    line-height: 1;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    font-family: 'Sansation_Regular', sans-serif;
+}
+
+.view-friend-modal-close-button:hover {
+    opacity: 1;
+}
+
+.view-friend-modal-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.view-friend-modal-header h2 {
+    color: #fff;
+    margin-bottom: 2rem;
+    font-size: 4rem;
+    font-family: 'Sansation_Regular', sans-serif;
+}
+
+.view-friend-modal-aura-container {
+    width: 300px;
+    height: 300px;
+    margin: 0 auto;
+    position: relative;
+    margin-top: 150px;
+}
+
+.view-friend-modal-collections {
+    margin-top: 6rem;
+    padding: 0 2rem;
+    width: 100%;
+}
+
+.view-friend-modal-collections h3 {
+    color: #fff;
+    margin-bottom: 2rem;
+    font-size: 3.2rem;
+    font-family: 'Sansation_Regular', sans-serif;
+}
+
+.view-friend-modal-collections p {
+    color: #fff;
+    margin-top: 1rem;
+    font-size: 3rem;
+    font-family: 'Sansation_Regular', sans-serif;
+}
+
+.view-friend-modal-collections-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-top: 1.5rem;
+    width: 100%;
+}
+
+.view-friend-modal-collection-card {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 0;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.view-friend-modal-collection-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.collection-aura {
+    height: 120px;
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    transition: transform 0.3s ease;
+}
+
+.view-friend-modal-collection-card:hover .collection-aura {
+    transform: scale(1.05);
+}
+
+.collection-info {
+    padding: 1.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.collection-info h4 {
+    color: #fff;
+    margin: 0;
+    font-size: 2.4rem;
+    font-family: 'Sansation_Regular', sans-serif;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.collection-info p {
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0.5rem 0 0;
+    font-size: 1.8rem;
+    font-family: 'Sansation_Regular', sans-serif;
+}
+
+.collection-actions {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.copy-button {
+    background-color: rgba(0, 0, 0, 0.5);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.copy-button:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+    transform: scale(1.1);
+}
+
+.copy-button .material-icons {
+    color: white;
+    font-size: 2rem;
+}
+
+.no-collections {
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    font-size: 2rem;
+    font-family: 'Sansation_Regular', sans-serif;
+    padding: 3rem;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+}
+
+.view-friend-modal-loading {
+    color: #fff;
+    text-align: center;
+    padding: 3rem;
+    font-size: 1.5rem;
+    font-family: 'Sansation_Regular', sans-serif;
+}
+
+.view-friend-modal-error {
+    color: #ff4444;
+    text-align: center;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    font-size: 1.5rem;
+    font-family: 'Sansation_Regular', sans-serif;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .view-friend-modal-content {
+        width: 98%;
+        padding: 2rem;
+    }
+
+    .view-friend-modal-aura-container {
+        width: 250px;
+        height: 250px;
+    }
+
+    .view-friend-modal-collection-card {
+        height: 180px;
+    }
+
+    .collection-aura {
+        height: 100px;
+    }
+
+    .collection-info h4 {
+        font-size: 2rem;
+    }
+
+    .collection-info p {
+        font-size: 1.6rem;
+    }
+}

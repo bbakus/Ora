@@ -62,6 +62,7 @@ Help the user express their current vibe through metaphor, sensory choices, and 
 6. DO NOT use words like "emotions", "feelings", or "mood."
 7. Prioritize sensory, symbolic, spatial, or narrative language.
 8. EVERY QUESTION SHOULD BE UNIQUE EVERY TIME.
+9.	Use a mix of question types: some metaphorical, some narrative, some observational, some slightly absurd. Vary sentence structures, point of view, and question tone. Avoid any repeated formula like “If you were a ___…”.
 
 🖋 EXAMPLE QUESTION:
 - Question: "Which kind of space pulls you in today?"
@@ -82,24 +83,34 @@ Help the user express their current vibe through metaphor, sensory choices, and 
 📦 RESPONSE FORMAT:
 Return only valid JSON with an array of question objects. Do not include explanations, intros, or markdown. Use this structure:
 
+examples:
 [
-{{
-    "question": "Your question text here?",
+  {
+    "question": "Which kind of space pulls you in today?",
     "options": [
-    {{ "text": "Option 1 text", "color": "COLOR_NAME" }},
-    {{ "text": "Option 2 text", "color": "COLOR_NAME" }},
-    {{ "text": "Option 3 text", "color": "COLOR_NAME" }}
+      { "text": "A glowing hallway filled with echoes", "color": "PURPLE" },
+      { "text": "A mossy clearing with gentle light", "color": "GREEN" },
+      { "text": "A crowded plaza under warm sun", "color": "ORANGE" }
     ]
-}},
-{{
-    "question": "Second question text?",
+  },
+  {
+    "question": "What type of silence feels right right now?",
     "options": [
-    {{ "text": "Option 1 text", "color": "COLOR_NAME" }},
-    {{ "text": "Option 2 text", "color": "COLOR_NAME" }},
-    {{ "text": "Option 3 text", "color": "COLOR_NAME" }}
+      { "text": "The hush before snowfall", "color": "BLUE" },
+      { "text": "A quiet shared between friends", "color": "ORANGE" },
+      { "text": "An eerie stillness before lightning", "color": "RED" }
     ]
-}},
-... and 4 more question objects to make exactly 6 questions total
+  },
+  {
+    "question": "Choose the object that draws you in today:",
+    "options": [
+      { "text": "A spinning glass prism", "color": "CYAN" },
+      { "text": "A heavy wool blanket", "color": "GREEN" },
+      { "text": "A golden pocket watch", "color": "PURPLE" }
+    ]
+  }
+]
+... and 3 more question objects to make exactly 6 questions total
 ]
 """
 

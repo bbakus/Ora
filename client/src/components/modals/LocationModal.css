@@ -28,7 +28,7 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.aura-visualization {
+.location-modal-aura-visualization {
   width: 100%;
   height: 580px;
   display: flex;
@@ -42,7 +42,7 @@
   position: relative;
 }
 
-.aura-visualization .aura-container {
+.location-modal-aura-visualization .aura-container {
   position: relative;
   width: 100%;
   height: 100%;
@@ -50,7 +50,7 @@
   max-height: 100%;
 }
 
-.aura-visualization .aura-circle {
+.location-modal-aura-visualization .aura-circle {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -61,24 +61,26 @@
   max-height: 80%;
 }
 
-.aura-visualization .aura-decoration {
+.location-modal-aura-visualization .aura-decoration {
   z-index: 20;
   pointer-events: none;
   overflow: visible !important;
+  max-width: 400px;
+  margin-left: 200px;
 }
 
-.aura-visualization .balanced-glow,
-.aura-visualization .balanced-glow-inner {
+.location-modal-aura-visualization .balanced-glow,
+.location-modal-aura-visualization .balanced-glow-inner {
   opacity: 0.8;
   z-index: 30;
 }
 
-.aura-visualization .sparkle {
+.location-modal-aura-visualization .sparkle {
   opacity: 0.9;
   z-index: 30;
 }
 
-.aura-visualization .pulse-ring {
+.location-modal-aura-visualization .pulse-ring {
   z-index: 30;
   border-width: 3px;
   opacity: 0.8;
@@ -94,47 +96,31 @@
   animation: location-modal-pulse 7s infinite cubic-bezier(0.215, 0.61, 0.355, 1) !important;
 }
 
-.aura-visualization .pulse-ring-2 {
+.location-modal-aura-visualization .pulse-ring-2 {
   animation-delay: 2.3s !important;
 }
 
-.aura-visualization .pulse-ring-3 {
+.location-modal-aura-visualization .pulse-ring-3 {
   animation-delay: 4.6s !important;
 }
 
-.aura-visualization .orbit-container {
+.location-modal-aura-visualization .orbit-container {
   z-index: 30;
-  width: 80% !important;
-  height: 80% !important;
-  top: 10% !important;
-  left: 10% !important;
+  width: 120% !important;
+  height: 90% !important;
+  top: 5% !important;
+  left: 16% !important;
 }
 
-.aura-visualization .flow-circle {
+.location-modal-aura-visualization .flow-circle {
   z-index: 30;
   filter: blur(1px);
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
 }
 
-.aura-visualization .gradient-canvas {
-  border-radius: 50%;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
-  filter: blur(2px);
-}
 
-.aura-visualization .aura-circle::after {
-  content: '';
-  position: absolute;
-  top: -0px;
-  left: 18px;
-  right: 18px;
-  bottom: -0px;
-  border-radius: 50%;
-  background: transparent;
-  box-shadow: 0 0 35px 10px rgba(255, 255, 255, 0.2);
-  z-index: 5;
-  pointer-events: none;
-}
+
+
 
 .vibe-name {
   font-size: 3.2rem;
@@ -333,7 +319,7 @@
     align-items: flex-start;
   }
   
-  .aura-visualization {
+  .location-modal-aura-visualization {
     height: 480px;
     border-radius: 0;
     padding: 30px;
@@ -381,7 +367,7 @@
 }
 
 @media (max-width: 768px) {
-  .aura-visualization {
+  .location-modal-aura-visualization {
     flex-direction: column;
     align-items: center;
     text-align: center;
@@ -413,7 +399,7 @@
     font-size: 2rem;
   }
   
-  .aura-visualization {
+  .location-modal-aura-visualization {
     height: 400px;
   }
   
