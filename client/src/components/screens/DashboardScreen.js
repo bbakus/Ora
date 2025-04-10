@@ -5,6 +5,7 @@ import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import UserAuraMarker from '../markers/UserAuraMarker';
 import './DashboardScreen.css';
 import AddFriendModal from '../modals/AddFriendModal';
+import FriendRequestsModal from '../modals/FriendRequestsModal';
 import CollectionLocationsModal from '../modals/CollectionLocationsModal';
 
 // NYC center coordinates as default
@@ -243,8 +244,12 @@ function DashboardScreen() {
     // Marker icon state for user location
     const [userMarkerIcon, setUserMarkerIcon] = useState(null);
 
-    // Add state for the AddFriendModal
+    // State for modals
     const [isAddFriendModalOpen, setIsAddFriendModalOpen] = useState(false);
+    const [isFriendRequestsModalOpen, setIsFriendRequestsModalOpen] = useState(false);
+    
+    // State for pending friend requests count
+    const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -474,6 +479,19 @@ function DashboardScreen() {
             }
             
             const friendsData = await response.json();
+            
+            // Log the friends data to help with debugging
+            console.log("Friends data received:", friendsData);
+            friendsData.forEach(friend => {
+                console.log(`Friend ${friend.username} aura data:`, {
+                    id: friend.id,
+                    aura_color: friend.aura_color,
+                    aura_color1: friend.aura_color1,
+                    aura_color2: friend.aura_color2,
+                    aura_shape: friend.aura_shape
+                });
+            });
+            
             setFriends(friendsData);
             setFriendsLoading(false);
         } catch (error) {
@@ -1169,9 +1187,11 @@ function DashboardScreen() {
                         // Create aura colors based on the place's hash (ensuring consistent colors for same places)
                         const hue1 = (placeHash % 360);
                         const hue2 = ((placeHash * 1.5) % 360);
+                        const hue3 = ((placeHash * 2.5) % 360);
                         
                         const color1 = hslToHex(hue1, 80, 60);
                         const color2 = hslToHex(hue2, 80, 60);
+                        const color3 = hslToHex(hue3, 80, 60);
                         
                         return {
                             id: place.place_id,
@@ -1181,9 +1201,10 @@ function DashboardScreen() {
                             location: placeLocation,
                             vicinity: place.vicinity,
                             types: place.types || [],
-                            aura_color: `linear-gradient(125deg, ${color1}, ${color2})`,
+                            aura_color: `linear-gradient(125deg, ${color1}, ${color2}, ${color3})`,
                             aura_color1: color1,
-                            aura_color2: color2
+                            aura_color2: color2,
+                            aura_color3: color3
                         };
                     });
                     
@@ -1314,6 +1335,103 @@ function DashboardScreen() {
         }
     }, [isLoaded, mapRef.current, currentLocation]);
 
+    // Add useEffect to fetch pending friend requests count
+    useEffect(() => {
+        if (userId) {
+            fetchPendingRequestsCount();
+        }
+    }, [userId]);
+
+    // Function to fetch pending friend requests count
+    const fetchPendingRequestsCount = async () => {
+        try {
+            const response = await fetch(`http://localhost:5001/api/friend_requests?user_id=${userId}&type=received`);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch friend requests: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            setPendingRequestsCount(data.length);
+        } catch (error) {
+            console.error('Error fetching friend requests count:', error);
+            setPendingRequestsCount(0);
+        }
+    };
+
+    // Add function to toggle friend requests modal
+    const handleFriendRequests = () => {
+        setIsFriendRequestsModalOpen(true);
+    };
+    
+    // Add handler to close the friend requests modal
+    const handleCloseFriendRequestsModal = () => {
+        setIsFriendRequestsModalOpen(false);
+        // Refresh friends list and pending requests count when modal closes
+        fetchFriends();
+        fetchPendingRequestsCount();
+    };
+
+    // Add helper function to handle aura color formatting
+    const formatAuraBackground = (friend) => {
+        try {
+            // Consistent color map from AuraQuestionnaire.js
+            const colorMap = {
+                'red': '#FF0000',     // energy
+                'blue': '#0000FF',    // calmness
+                'orange': '#FFA500',  // warmth
+                'purple': '#800080',  // elegance
+                'green': '#00FF00',   // casual
+                'cyan': '#00FFFF',    // freshness 
+                'gold': '#FFD700',    // authenticity
+                'yellow': '#FFFF00'   // additional color
+            };
+
+            if (!friend || !friend.aura_color) {
+                return 'linear-gradient(125deg, #6a11cb, #2575fc, #00b7c2, #4ecdc4)';
+            }
+
+            // Check if aura_color contains a gradient or comma-separated colors
+            if (friend.aura_color.includes('gradient') || friend.aura_color.includes(',')) {
+                // Extract colors from the gradient
+                const colorMatches = friend.aura_color.match(/#[0-9a-f]{6}/gi) || 
+                                    friend.aura_color.match(/rgba?\([^)]+\)/gi);
+                if (colorMatches && colorMatches.length) {
+                    return `linear-gradient(125deg, ${colorMatches.join(', ')})`;
+                }
+            }
+
+            // Check if the aura_color is a color name that needs mapping
+            if (typeof friend.aura_color === 'string' && colorMap[friend.aura_color.toLowerCase()]) {
+                const mappedColor = colorMap[friend.aura_color.toLowerCase()];
+                return `linear-gradient(125deg, ${mappedColor}, ${mappedColor})`;
+            }
+
+            // Handle case when we have all three color properties
+            if (friend.aura_color1 && friend.aura_color2 && friend.aura_color3) {
+                // Check if these are color names that need mapping
+                const color1 = colorMap[friend.aura_color1.toLowerCase()] || friend.aura_color1;
+                const color2 = colorMap[friend.aura_color2.toLowerCase()] || friend.aura_color2;
+                const color3 = colorMap[friend.aura_color3.toLowerCase()] || friend.aura_color3;
+                return `linear-gradient(125deg, ${color1}, ${color2}, ${color3})`;
+            }
+            
+            // Handle case when we have only two color properties
+            if (friend.aura_color1 && friend.aura_color2) {
+                // Check if these are color names that need mapping
+                const color1 = colorMap[friend.aura_color1.toLowerCase()] || friend.aura_color1;
+                const color2 = colorMap[friend.aura_color2.toLowerCase()] || friend.aura_color2;
+                return `linear-gradient(125deg, ${color1}, ${color2})`;
+            }
+
+            // Single color case
+            return `linear-gradient(125deg, ${friend.aura_color}, ${friend.aura_color})`;
+        } catch (error) {
+            console.error('Error formatting aura background:', error);
+            return 'linear-gradient(125deg, #6a11cb, #2575fc, #00b7c2, #4ecdc4)';
+        }
+    };
+
     if (loading) {
         return <div className="loading">Loading your aura...</div>;
     }
@@ -1326,6 +1444,18 @@ function DashboardScreen() {
         <div className="dashboard-container">
             <header className="dashboard-header">
                 <h1>Hello, {userData.username}</h1>
+                <div className="header-buttons">
+                    <button 
+                        className="friend-requests-button"
+                        onClick={handleFriendRequests}
+                    >
+                        <span className="material-icons">mail</span>
+                        Friend Requests
+                        {pendingRequestsCount > 0 && (
+                            <span className="request-badge">{pendingRequestsCount}</span>
+                        )}
+                    </button>
+                </div>
             </header>
             
             <main className="dashboard-content">
@@ -1408,7 +1538,12 @@ function DashboardScreen() {
                                                 className="friend"
                                                 onClick={() => handleFriendClick(friend.id)}
                                             >
-                                                <div className="friend-aura"></div>
+                                                <div 
+                                                    className="friend-aura"
+                                                    style={{
+                                                        background: formatAuraBackground(friend)
+                                                    }}
+                                                ></div>
                                                 <h3 className="friend-name">{friend.username}</h3>
                                             </div>
                                         ))}
@@ -1478,6 +1613,13 @@ function DashboardScreen() {
                 onClose={handleCloseCollectionModal}
                 collection={selectedCollection}
                 onLocationClick={handleLocationClick}
+            />
+
+            {/* Friend Requests Modal */}
+            <FriendRequestsModal
+                isOpen={isFriendRequestsModalOpen}
+                onClose={handleCloseFriendRequestsModal}
+                userId={userId}
             />
         </div>
     );

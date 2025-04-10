@@ -59,13 +59,26 @@ function AddFriendModal({ isOpen, onClose, userId }) {
     }
   };
 
-  // Send friend request
+  // Send friend request - ULTRA SIMPLIFIED VERSION
   const sendFriendRequest = async (friendId) => {
     setIsLoading(true);
     setError(null);
     setSuccessMessage('');
     
+    // Simple validation
+    if (!userId || !friendId) {
+      setError("Missing user IDs");
+      setIsLoading(false);
+      return;
+    }
+    
+    console.log("FRIEND REQUEST DATA:", {
+      sender_id: userId,
+      receiver_id: friendId
+    });
+    
     try {
+      // Make the simplest possible fetch request
       const response = await fetch('http://localhost:5001/api/friend_requests', {
         method: 'POST',
         headers: {
@@ -74,24 +87,28 @@ function AddFriendModal({ isOpen, onClose, userId }) {
         body: JSON.stringify({
           sender_id: userId,
           receiver_id: friendId
-        }),
+        })
       });
       
-      if (!response.ok) {
-        throw new Error(`Failed to send friend request: ${response.status}`);
+      // Capture the response text regardless of status
+      const responseText = await response.text();
+      console.log("RESPONSE STATUS:", response.status);
+      console.log("RESPONSE TEXT:", responseText);
+      
+      // Update UI based on whether it succeeded
+      if (response.ok) {
+        setSuccessMessage('Friend request sent successfully!');
+        setSearchResults(prevResults => 
+          prevResults.map(user => 
+            user.id === friendId ? { ...user, requestSent: true } : user
+          )
+        );
+      } else {
+        throw new Error(`Server returned ${response.status}: ${responseText}`);
       }
-      
-      // Success message
-      setSuccessMessage('Friend request sent successfully!');
-      
-      // Update the search results to show the request is pending
-      setSearchResults(prevResults => 
-        prevResults.map(user => 
-          user.id === friendId ? { ...user, requestSent: true } : user
-        )
-      );
     } catch (err) {
-      setError('Failed to send friend request. Please try again.');
+      console.error("FRIEND REQUEST ERROR:", err);
+      setError(`Failed: ${err.message}`);
     } finally {
       setIsLoading(false);
     }

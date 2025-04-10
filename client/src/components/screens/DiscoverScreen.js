@@ -195,11 +195,7 @@ function DiscoverScreen() {
     { id: 'park', label: 'Parks', icon: 'park' },
     { id: 'store', label: 'Stores', icon: 'store' },
     { id: 'museum', label: 'Museums', icon: 'museum' },
-    { id: 'hotel', label: 'Hotels', icon: 'hotel' },
-    { id: 'gym', label: 'Gyms', icon: 'fitness_center' },
-    { id: 'theater', label: 'Theaters', icon: 'theaters' },
     { id: 'bakery', label: 'Bakeries', icon: 'bakery_dining' },
-    { id: 'grocery', label: 'Grocery', icon: 'local_grocery_store' },
     { id: 'nightclub', label: 'Nightclubs', icon: 'nightlife' }
   ];
 
@@ -1080,10 +1076,25 @@ function DiscoverScreen() {
     
     // Apply category filter if active
     if (activeFilter) {
-      // Regular place type filter
       filteredLocations = locations.filter(location => {
         const placeType = (location.place_type || '').toLowerCase();
-        return placeType.includes(activeFilter.toLowerCase());
+        const filterType = activeFilter.toLowerCase();
+        
+        // Map filter types to exact place types from database
+        const placeTypeMap = {
+          'store': 'shopping_mall',
+          'hotel': 'lodging',
+          'gym': 'gym',
+          'theater': 'movie_theater',
+          'nightclub': 'night_club',
+          'grocery': 'grocery_or_supermarket'
+        };
+        
+        // Get the exact place type to match against
+        const exactPlaceType = placeTypeMap[filterType] || filterType;
+        
+        // Check for exact match
+        return placeType === exactPlaceType;
       });
     }
     
@@ -1733,22 +1744,22 @@ function DiscoverScreen() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '15px 30px',
+          padding: '60px 60px',
           backgroundColor: auraMatchEnabled ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.85)',
           color: auraMatchEnabled ? '#000000' : '#ffffff',
-          border: auraMatchEnabled ? '3px solid #ffffff' : '3px solid rgba(255, 255, 255, 0.5)',
-          borderRadius: '30px',
-          boxShadow: '0 4px 10px rgba(0, 0, 0, 0.5)',
+          border: auraMatchEnabled ? '4px solid #ffffff' : '4px solid #ffffff',
+          borderRadius: '40px',
+          boxShadow: '0 6px 15px rgba(0, 0, 0, 0.5)',
           transition: 'all 0.3s',
           cursor: 'pointer',
-          fontSize: '18px',
+          fontSize: '60px',
           fontWeight: '600',
-          width: '70%',
-          maxWidth: '350px',
-          height: '60px'
+          width: '85%',
+          maxWidth: '800px',
+          height: '80px'
         }}
       >
-        <span className="material-icons" style={{ marginRight: '10px', fontSize: '28px' }}>auto_awesome</span>
+        <span className="material-icons" style={{ marginRight: '15px', fontSize: '36px' }}>auto_awesome</span>
         <span>Aura Match {auraMatchEnabled ? 'ON' : 'OFF'}</span>
       </button>
       

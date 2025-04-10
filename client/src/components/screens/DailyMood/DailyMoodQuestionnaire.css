@@ -241,3 +241,58 @@
     color: white;
     margin-top: 10px;
 }
+
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.retry-button {
+    padding: 14px 25px;
+    font-size: 18px;
+    font-weight: 600;
+    background: linear-gradient(45deg, #7e52a0, #a569bd);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.retry-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Button color effects */
+.option-button.color-effect {
+    color: #ffffff;
+    font-weight: bold;
+    transform: scale(1.05);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    border: 3px solid white !important;
+    background-color: transparent !important;
+}
+
+/* Remove the pseudo elements and their animations as we'll use direct JS manipulation like AuraQuestionnaire.js */
+.option-button.color-effect::before,
+.option-button.color-effect::after {
+    display: none;
+}
+
+/* Remove all specific color classes since coloring will be handled by JS directly */
+.option-button.color-effect.color-RED,
+.option-button.color-effect.color-ORANGE,
+.option-button.color-effect.color-YELLOW,
+.option-button.color-effect.color-GREEN,
+.option-button.color-effect.color-BLUE,
+.option-button.color-effect.color-PURPLE,
+.option-button.color-effect.color-CYAN {
+    /* These will be set by JS dynamically */
+}

@@ -9,13 +9,26 @@ from server.models.user import User
 from server.extensions import db
 
 # Configure OpenAI API key
-openai_api_key = os.environ.get("OPENAI_API_KEY")
+openai_api_key = os.environ.get("OPENAI_API_KEY", "").strip()
 if not openai_api_key:
     raise ValueError("OpenAI API key is not set in environment variables")
 
-# Initialize the OpenAI client
-client = OpenAI(api_key=openai_api_key)
-print(f"OpenAI API key configured: {openai_api_key[:10]}...")  # Log first few chars to verify it's set
+# Log API key first few chars for debugging
+api_key_preview = openai_api_key[:10] + "..." if len(openai_api_key) > 10 else "invalid_key"
+print(f"OpenAI API key configured: {api_key_preview}")
+print(f"OpenAI API key length: {len(openai_api_key)} characters")
+
+try:
+    # Initialize the OpenAI client with increased timeout
+    client = OpenAI(api_key=openai_api_key.strip(), timeout=60.0)  # Increase timeout to 60 seconds
+    # Test the API key with a simple call
+    models = client.models.list()
+    print(f"OpenAI API connection successful. Available models: {len(models.data)}")
+except Exception as e:
+    print(f"ERROR: Could not initialize OpenAI client: {str(e)}")
+    print("This may indicate an invalid API key or network issue")
+    # Still create the client, we'll handle errors in the API calls
+    client = OpenAI(api_key=openai_api_key, timeout=60.0)
 
 class DailyMoodQuestionnaire(Resource):
 
@@ -43,7 +56,7 @@ Help the user express their current vibe through metaphor, sensory choices, and 
 🪄 RULES:
 1. You MUST return EXACTLY 6 questions.
 2. Each question MUST have exactly 3 multiple choice options.
-3. Each option MUST be tagged secretly with one of these colors: RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, CYAN. THERE IS NO BLACK, NO WHITE, NO PINK, NO BROWN, NO OTHER COLOR THAN WHAT IS ALREADY INDICATED YOU FUCKING PIECE OF SHIT.
+3. Each option MUST be tagged secretly with one of these colors: RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, CYAN. No other colors are allowed.
 4. DO NOT hint at the color name in the answer text.
 5. DO NOT reuse the same question structure or sentence starter.
 6. DO NOT use words like "emotions", "feelings", or "mood."
@@ -67,7 +80,7 @@ Help the user express their current vibe through metaphor, sensory choices, and 
 - CYAN: novelty, change, modern, unique, refreshing
 
 📦 RESPONSE FORMAT:
-Return only valid JSON. Do not include explanations, intros, or markdown. Use this structure:
+Return only valid JSON with an array of question objects. Do not include explanations, intros, or markdown. Use this structure:
 
 [
 {{
@@ -90,76 +103,189 @@ Return only valid JSON. Do not include explanations, intros, or markdown. Use th
 ]
 """
 
-            # Call OpenAI API
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant that generates thoughtful mood questions with associated color values."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=500
-            )
+            # Implement a retry mechanism for OpenAI API
+            max_retries = 3
+            retry_count = 0
+            backoff_time = 1  # Initial backoff time in seconds
+            
+            while retry_count < max_retries:
+                try:
+                    print(f"Attempt {retry_count + 1} to call OpenAI API")
+                    
+                    # Call OpenAI API with increased token limit
+                    response = client.chat.completions.create(
+                        model="gpt-3.5-turbo-1106",  # Use the latest version that's good with JSON
+                        messages=[
+                            {"role": "system", "content": "You are a helpful assistant that generates thoughtful mood questions with associated color values. Always return a JSON array of question objects exactly as specified."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        temperature=0.7,
+                        max_tokens=1500,  # Increase token limit further
+                        # Remove the response_format parameter - we want an array, not an object
+                    )
+                    
+                    questions_text = response.choices[0].message.content
+                    print(f"Raw OpenAI response: {questions_text}")
+                    
+                    # Break out of retry loop if successful
+                    break
+                    
+                except Exception as api_err:
+                    retry_count += 1
+                    print(f"OpenAI API call failed (attempt {retry_count}): {str(api_err)}")
+                    
+                    if retry_count >= max_retries:
+                        print("Max retries reached, failing")
+                        raise
+                    
+                    # Exponential backoff
+                    import time
+                    sleep_time = backoff_time * (2 ** (retry_count - 1))
+                    print(f"Retrying in {sleep_time} seconds...")
+                    time.sleep(sleep_time)
 
-            questions_text = response.choices[0].message.content
-            print(f"Raw OpenAI response: {questions_text}")
-
-            # Clean up markdown formatting
+            # Clean up markdown formatting (in case JSON is returned within code blocks)
             if "```json" in questions_text:
                 questions_text = questions_text.split("```json")[1].split("```")[0].strip()
             elif "```" in questions_text:
                 questions_text = questions_text.split("```")[1].split("```")[0].strip()
-
-            print(f"Cleaned questions: {questions_text}")
-
-            # Try to parse the cleaned text as JSON
+            
+            # Additional cleanup - remove any leading/trailing brackets if they exist
+            questions_text = questions_text.strip()
+            
+            print(f"Cleaned text (first 100 chars): {questions_text[:100]}...")
+            
+            # Try to parse JSON with better error handling
             try:
-                parsed_questions = json.loads(questions_text)
+                # First try to parse as is
+                try:
+                    parsed_json = json.loads(questions_text)
+                except json.JSONDecodeError as e:
+                    # If that fails, try to fix common issues
+                    print(f"Initial JSON parsing failed: {str(e)}")
+                    
+                    # Try adding [] if missing - common GPT mistake
+                    if not questions_text.startswith('['):
+                        questions_text = '[' + questions_text
+                    if not questions_text.endswith(']'):
+                        questions_text = questions_text + ']'
+                    
+                    # Replace single quotes with double quotes if needed
+                    questions_text = questions_text.replace("'", '"')
+                    
+                    # Try parsing again
+                    print("Attempting to parse with fixes...")
+                    parsed_json = json.loads(questions_text)
+                    print("Parse successful after fixes")
+                
+                # Handle the response format
+                if isinstance(parsed_json, list):
+                    # Direct array of questions - what we want
+                    parsed_questions = parsed_json
+                elif isinstance(parsed_json, dict):
+                    # Check if it's a JSON object with a "questions" field
+                    if "questions" in parsed_json:
+                        parsed_questions = parsed_json["questions"]
+                    else:
+                        # Single question object? Put it in an array
+                        parsed_questions = [parsed_json]
+                else:
+                    raise ValueError(f"Unexpected JSON structure: {type(parsed_json)}")
+                
+                print(f"Successfully parsed questions: {len(parsed_questions)} questions found")
                 
                 # Validate the structure and make sure each question has color tags
                 valid = True
                 
-                # Check if we have exactly 6 questions
-                if len(parsed_questions) != 6:
-                    print(f"Invalid number of questions: {len(parsed_questions)}, expected 6. Falling back.")
+                # Check if we have questions
+                if not parsed_questions or len(parsed_questions) == 0:
+                    print("No questions found in parsed data")
                     valid = False
                 
-                if valid:
-                    for question in parsed_questions:
-                        if "question" not in question or "options" not in question:
-                            valid = False
-                            print("Question missing required fields.")
-                            break
-                        if len(question["options"]) != 3:
-                            valid = False
-                            print(f"Question has {len(question['options'])} options instead of 3.")
-                            break
-                        for option in question["options"]:
-                            if "text" not in option or "color" not in option:
-                                valid = False
-                                print("Option missing required fields.")
-                                break
-                            if option["color"] not in ["RED", "ORANGE", "YELLOW", "GREEN", "BLUE", "PURPLE", "CYAN"]:
-                                valid = False
-                                print(f"Invalid color: {option['color']}")
-                                break
+                # Attempt to fix or create missing questions if needed
+                if len(parsed_questions) < 6:
+                    print(f"Only {len(parsed_questions)} questions found, expected 6. Will use what we have.")
                 
-                if not valid:
-                    print(f"Invalid question format from GPT, falling back.")
+                # Validate and fix each question
+                for i, question in enumerate(parsed_questions):
+                    if not isinstance(question, dict):
+                        print(f"Question {i} is not a dictionary: {question}")
+                        valid = False
+                        continue
+                        
+                    # Check/fix required fields
+                    if "question" not in question:
+                        print(f"Question {i} missing 'question' field")
+                        question["question"] = f"Question {i+1}?"
+                        
+                    if "options" not in question:
+                        print(f"Question {i} missing 'options' field")
+                        question["options"] = [
+                            {"text": "Option A", "color": "BLUE"},
+                            {"text": "Option B", "color": "GREEN"},
+                            {"text": "Option C", "color": "RED"}
+                        ]
                     
+                    # Fix/validate options
+                    if not isinstance(question["options"], list):
+                        print(f"Question {i} options is not a list")
+                        question["options"] = [
+                            {"text": "Option A", "color": "BLUE"},
+                            {"text": "Option B", "color": "GREEN"},
+                            {"text": "Option C", "color": "RED"}
+                        ]
                     
-            except json.JSONDecodeError as json_err:
-                print(f"Invalid JSON from GPT, falling back. Error: {str(json_err)}")
+                    # Ensure we have exactly 3 options
+                    options = question["options"]
+                    while len(options) < 3:
+                        print(f"Question {i} has only {len(options)} options, adding default option")
+                        options.append({"text": f"Option {len(options)+1}", "color": "BLUE"})
+                    
+                    # Truncate extra options
+                    if len(options) > 3:
+                        print(f"Question {i} has {len(options)} options, truncating to 3")
+                        question["options"] = options[:3]
+                    
+                    # Validate each option has text and color
+                    for j, option in enumerate(question["options"]):
+                        if not isinstance(option, dict):
+                            print(f"Question {i}, Option {j} is not a dictionary: {option}")
+                            question["options"][j] = {"text": f"Option {j+1}", "color": "BLUE"}
+                            continue
+                            
+                        if "text" not in option:
+                            print(f"Question {i}, Option {j} missing 'text' field")
+                            option["text"] = f"Option {j+1}"
+                            
+                        if "color" not in option:
+                            print(f"Question {i}, Option {j} missing 'color' field")
+                            option["color"] = "BLUE"
+                            
+                        # Validate color is one of the allowed values
+                        valid_colors = ["RED", "ORANGE", "YELLOW", "GREEN", "BLUE", "PURPLE", "CYAN"]
+                        if option["color"] not in valid_colors:
+                            print(f"Question {i}, Option {j} has invalid color: {option['color']}")
+                            option["color"] = "BLUE"  # Default to blue for invalid colors
                 
-
-            # Return a dictionary, not a Response object
-            return {
-                "status": "success",
-                "questions": parsed_questions,
-                "user_id": user_id
-            }, 200
+                # Return what we have, even if not perfect
+                print(f"Returning {len(parsed_questions)} questions")
+                return {
+                    "status": "success",
+                    "questions": parsed_questions,
+                    "user_id": user_id
+                }, 200
+                
+            except Exception as e:
+                print(f"Fatal error parsing questions: {str(e)}")
+                print(f"Raw text (truncated): {questions_text[:200]}...")
+                import traceback
+                traceback.print_exc()
+                raise ValueError(f"Failed to parse or validate questions: {str(e)}")
+                
         except Exception as e:
             print(f"Error generating mood questions: {str(e)}")
+            import traceback
+            traceback.print_exc()  # Print full stack trace for better debugging
             return {
                 "status": "error",
                 "message": f"Failed to generate mood questions: {str(e)}",
@@ -178,8 +304,8 @@ class AnalyzeMoodResponse(Resource):
             client_shape = data.get('aura_shape')
             
             print(f"Analyzing mood responses for user {user_id}")
-            print(f"Questions: {questions}")
-            print(f"Responses: {responses}")
+            print(f"Questions: {len(questions)} received")
+            print(f"Responses: {len(responses)} received")
             print(f"Client determined shape: {client_shape}")
             
             if not questions or not responses or len(questions) != len(responses):
@@ -213,193 +339,74 @@ class AnalyzeMoodResponse(Resource):
                 # Count frequency of each color
                 color_counts = {}
                 for color in color_values:
-                    color_counts[color] = color_counts.get(color, 0) + 1
-                
-                # Sort colors by frequency (highest first)
-                sorted_colors = sorted(color_counts.items(), key=lambda x: x[1], reverse=True)
-                print(f"Colors sorted by frequency: {sorted_colors}")
-                
-                # Get the top 3 colors - similar to the original aura questionnaire logic
-                top_colors = []
-                
-                # First add the definite top colors (1st and 2nd)
-                for i in range(min(2, len(sorted_colors))):
-                    top_colors.append(sorted_colors[i][0])
-                
-                # Handle the case where we need to decide on the 3rd color
-                if len(sorted_colors) > 2:
-                    # Get all colors tied for 3rd place
-                    third_place_count = sorted_colors[2][1]
-                    tied_colors = [entry[0] for entry in sorted_colors[2:] if entry[1] == third_place_count]
-                    
-                    print(f"Colors tied for 3rd place: {tied_colors} (count: {third_place_count})")
-                    
-                    # If there's only one, add it
-                    if len(tied_colors) == 1:
-                        top_colors.append(tied_colors[0])
-                    # If there are multiple tied, randomly select one
-                    elif len(tied_colors) > 1:
-                        import random
-                        selected = random.choice(tied_colors)
-                        print(f"Randomly selected from tied colors: {selected}")
-                        top_colors.append(selected)
-                
-                # Ensure we have EXACTLY 3 colors
-                if len(top_colors) > 3:
-                    print(f"Too many colors ({len(top_colors)}), truncating to 3: {top_colors[:3]}")
-                    top_colors = top_colors[:3]
-                
-                # Fill in with defaults if we don't have enough colors
-                if len(top_colors) < 3:
-                    print(f"Not enough colors ({len(top_colors)}), adding defaults")
-                    default_colors = ["BLUE", "PURPLE", "GREEN"]
-                    while len(top_colors) < 3:
-                        # Find a default color that's not already in top_colors
-                        for color in default_colors:
-                            if color not in top_colors:
-                                print(f"Adding default color: {color}")
-                                top_colors.append(color)
-                                break
-                
-                print(f"Final top 3 colors: {top_colors}")
-                
-                # Map to standard hex colors - always use 6-digit format
-                color_mapping = {
-                    "RED": "#FF0000",
-                    "ORANGE": "#FFA500",
-                    "YELLOW": "#FFD700",
-                    "GREEN": "#00FF00",
-                    "BLUE": "#0000FF",
-                    "PURPLE": "#800080",
-                    "CYAN": "#00FFFF"
-                }
-                
-                # Map to hex colors - ALWAYS ensure we have exactly 3 colors
-                gradient_colors = []
-                for color_name in top_colors:
-                    hex_color = color_mapping.get(color_name)
-                    if hex_color:
-                        gradient_colors.append(hex_color)
+                    if color in color_counts:
+                        color_counts[color] += 1
                     else:
-                        # Fallback in case of unknown color
-                        print(f"Warning: Unknown color name '{color_name}', using fallback")
-                        gradient_colors.append("#0000FF")
+                        color_counts[color] = 1
                 
-                # Double-check we have exactly 3 colors
-                while len(gradient_colors) < 3:
-                    # Add default colors if needed
-                    default_hex = ["#0000FF", "#800080", "#00FF00"]
-                    for color in default_hex:
-                        if color not in gradient_colors:
-                            gradient_colors.append(color)
-                            break
+                print(f"Color counts: {color_counts}")
                 
-                # Limit to exactly 3 colors
-                gradient_colors = gradient_colors[:3]
+                # Determine dominant colors (top 3)
+                sorted_colors = sorted(color_counts.items(), key=lambda x: x[1], reverse=True)
+                top_colors = sorted_colors[:3] if len(sorted_colors) >= 3 else sorted_colors
                 
-                # Create a CSS gradient with the top 3 colors
-                gradient = f"linear-gradient(45deg, {', '.join(gradient_colors)})"
+                print(f"Top colors: {top_colors}")
                 
-                print(f"Generated gradient: {gradient}")
-                
-                # Determine server aura shape based on frequency of colors
-                # (This will be used as fallback if client doesn't provide one)
-                shape_mapping = {
-                    "RED": "sparkling",
-                    "ORANGE": "flowing",
-                    "YELLOW": "sparkling",
-                    "GREEN": "balanced",
-                    "BLUE": "balanced",
-                    "PURPLE": "flowing",
-                    "CYAN": "pulsing"
+                # Map colors to hex values - UPDATED to match AuraQuestionnaire.js
+                color_hex_map = {
+                    "RED": "#FF0000",     # energy
+                    "ORANGE": "#FFA500",  # warmth
+                    "YELLOW": "#FFFF00",  # using standard yellow (added)
+                    "GREEN": "#00FF00",   # casual
+                    "BLUE": "#0000FF",    # calmness
+                    "PURPLE": "#800080",  # elegance
+                    "CYAN": "#00FFFF"     # freshness
                 }
                 
-                # Default to balanced
-                server_aura_shape = "balanced"
+                # Create a gradient based on top colors
+                aura_colors = []
+                default_colors = ["#2196F3", "#00BCD4", "#4CAF50"]  # Default blue-cyan-green
                 
-                # If we have any colors, use the shape of the most frequent color
-                if top_colors:
-                    top_color = top_colors[0]
-                    server_aura_shape = shape_mapping.get(top_color, "balanced")
+                for i in range(min(3, len(top_colors))):
+                    color_name = top_colors[i][0]
+                    if color_name in color_hex_map:
+                        aura_colors.append(color_hex_map[color_name])
                 
-                # Use client shape if provided, otherwise use server shape
-                aura_shape = client_shape if client_shape else server_aura_shape
+                # Fill in with defaults if needed
+                while len(aura_colors) < 3:
+                    aura_colors.append(default_colors[len(aura_colors)])
                 
-                # Ensure shape is valid
-                valid_shapes = ["sparkling", "flowing", "pulsing", "balanced"]
-                if aura_shape not in valid_shapes:
-                    aura_shape = "balanced"  # Default to balanced if invalid
+                # Create the aura color gradient
+                aura_color = f"linear-gradient(45deg, {aura_colors[0]}, {aura_colors[1]}, {aura_colors[2]})"
+                print(f"Generated aura color: {aura_color}")
                 
-                print(f"Final aura shape: {aura_shape} (client: {client_shape}, server fallback: {server_aura_shape})")
+                # Use client-determined shape or fallback to balanced
+                aura_shape = client_shape if client_shape in ["sparkling", "flowing", "pulsing", "balanced"] else "balanced"
                 
-                # Create summary based on dominant colors
-                color_meanings = {
-                    "RED": "energetic and passionate",
-                    "ORANGE": "warm and sociable",
-                    "YELLOW": "optimistic and creative",
-                    "GREEN": "balanced and natural",
-                    "BLUE": "calm and peaceful",
-                    "PURPLE": "imaginative and thoughtful",
-                    "CYAN": "fresh and innovative"
-                }
-                
-                mood_parts = [color_meanings.get(color, "") for color in top_colors[:2]]
-                mood_summary = f"Your mood today is {' with hints of '.join(filter(None, mood_parts))}."
-                
-                # Create analysis data
-                analysis_data = {
-                    "aura_color": gradient,
+                # Create analysis result
+                analysis_result = {
+                    "aura_color": aura_color, 
                     "aura_shape": aura_shape,
-                    "mood_summary": mood_summary
+                    "mood_summary": "Your aura reflects your current state of being."
                 }
                 
-                # Serialize to JSON
-                analysis_text = json.dumps(analysis_data)
-                
-                # Save the aura data to the user's profile
-                user = db.session.get(User, user_id)
-                if user:
-                    user.aura_color = gradient
-                    user.aura_shape = aura_shape
-                    
-                    # Extract individual colors for better frontend use
-                    if len(gradient_colors) >= 3:
-                        user.aura_color1 = gradient_colors[0]
-                        user.aura_color2 = gradient_colors[1]
-                        user.aura_color3 = gradient_colors[2]
-                    elif len(gradient_colors) == 2:
-                        user.aura_color1 = gradient_colors[0]
-                        user.aura_color2 = gradient_colors[1]
-                        user.aura_color3 = gradient_colors[1]  # Duplicate last color
-                    elif len(gradient_colors) == 1:
-                        user.aura_color1 = gradient_colors[0]
-                        user.aura_color2 = gradient_colors[0]
-                        user.aura_color3 = gradient_colors[0]
-                        
-                    # Save the updated user data
-                    db.session.commit()
-                    print(f"Saved aura data for user {user_id}: shape={aura_shape}, colors={gradient_colors}")
-                else:
-                    print(f"Warning: User {user_id} not found, couldn't save aura data")
+                # Return analysis result
+                return {
+                    "status": "success",
+                    "analysis": analysis_result,
+                    "user_id": user_id
+                }, 200
                 
             except Exception as e:
-                print(f"Error processing colors: {e}")
-                # Fallback
-                analysis_text = json.dumps({
-                    "aura_color": "linear-gradient(45deg, #054f7d, #00a7cf, #efe348)",
-                    "aura_shape": "balanced",
-                    "mood_summary": "Your mood today is balanced and thoughtful."
-                })
-            
-            # Return the analysis
-            return {
-                "status": "success",
-                "analysis": analysis_text,
-                "user_id": user_id
-            }
+                print(f"Error in color analysis: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                raise ValueError(f"Failed to analyze color values: {str(e)}")
             
         except Exception as e:
             print(f"Error analyzing mood responses: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return {
                 "status": "error",
                 "message": f"Failed to analyze mood responses: {str(e)}",

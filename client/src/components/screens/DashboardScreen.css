@@ -19,19 +19,67 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px;
+    padding: 20px 40px;
+    margin-bottom: 30px;
     border-radius: 16px;
-    margin-bottom: 20px;
     background-color: #1e1e1e !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
 .dashboard-header h1 {
-    font-size: 66px;
+    font-size: 3rem;
+    color: #f5f5f5;
     margin: 0;
     font-weight: 700;
-    color: #f5f5f5 !important;
     font-family: Arial, Helvetica, sans-serif
+}
+
+.header-buttons {
+    display: flex;
+    gap: 20px;
+}
+
+.friend-requests-button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 25px;
+    background-color: #1e1e1e;
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    font-size: 1.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.friend-requests-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.friend-requests-button .material-icons {
+    font-size: 2rem;
+}
+
+.request-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background-color: #ff5c5c;
+    color: white;
+    font-size: 1.2rem;
+    min-width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 /* Dashboard Content */
@@ -343,49 +391,63 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-width: 120px; /* Increased min width */
+    min-width: 160px; /* Increased min width more */
     cursor: pointer;
     position: relative;
-    transition: transform 0.2s;
+    transition: transform 0.3s, box-shadow 0.3s;
+    padding: 16px;
+    border-radius: 16px;
 }
 
 .friend:hover {
-    transform: translateY(-5px);
+    transform: translateY(-8px);
+    background-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
+/* Friend aura styles */
 .friend-aura {
-    width: 100px; /* Increased size */
-    height: 100px; /* Increased size */
+    width: 140px;
+    height: 140px;
     border-radius: 50%;
-    margin-bottom: 12px; /* Increased margin */
-    background-size: 200% 200%;
-    animation: gradient 5s ease infinite;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+    background-size: 400% 400%;
 }
 
-@keyframes gradient {
+/* Default animated gradient - only applies when no inline style is present */
+.friend-aura:not([style*="background"]) {
+    background: linear-gradient(125deg, #6a11cb, #2575fc, #00b7c2, #4ecdc4);
+    animation: GradientAnimation 5s linear infinite;
+}
+
+@keyframes GradientAnimation {
     0% {
         background-position: 0% 50%;
     }
-    50% {
-        background-position: 100% 50%;
-    }
     100% {
-        background-position: 0% 50%;
+        background-position: 100% 50%;
     }
 }
 
+.friend:hover .friend-aura {
+    transform: scale(1.05);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+}
+
 .friend-name {
-    font-size: 20px; /* Increased font size */
+    font-size: 28px; /* Significantly increased font size */
     text-align: center;
-    margin: 0;
-    color: #f5f5f5;
-    max-width: 120px; /* Increased max width */
+    margin: 8px 0 0;
+    color: #ffffff;
+    max-width: 180px; /* Increased max width */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 500; /* Added font weight */
+    font-weight: 600; /* Bolder text */
+    letter-spacing: 0.5px; /* Better readability */
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* Text shadow for depth */
 }
 
 .friend-status {
@@ -774,8 +836,8 @@
     align-items: center;
     justify-content: center;
     margin: 0 !important;
-    min-width: 1100px !important;
-    min-height: 200px;
+    min-width: 1230px !important;
+    min-height: 100px;
     border-radius: 30px !important;
     box-shadow: 0 4px 12px rgba(0, 183, 194, 0.4) !important;
 }

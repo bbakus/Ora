@@ -2,6 +2,58 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import './DailyMoodQuestionnaire.css';
 
+// Default questions to use if API fails completely
+const DEFAULT_QUESTIONS = [
+  {
+    question: "Which setting feels most inviting right now?",
+    options: [
+      { text: "A busy downtown plaza filled with activity", color: "RED" },
+      { text: "A tranquil garden with soft sounds of nature", color: "GREEN" },
+      { text: "A quiet library with warm lighting", color: "BLUE" }
+    ]
+  },
+  {
+    question: "What type of melody would resonate with you today?",
+    options: [
+      { text: "An energetic rhythm with driving beats", color: "RED" },
+      { text: "A familiar tune that brings back memories", color: "ORANGE" },
+      { text: "A gentle, flowing instrumental piece", color: "BLUE" }
+    ]
+  },
+  {
+    question: "Which natural element speaks to you most?",
+    options: [
+      { text: "A crackling fire dancing in a hearth", color: "RED" },
+      { text: "A steady mountain stream over smooth stones", color: "CYAN" },
+      { text: "A gentle breeze through autumn leaves", color: "GREEN" }
+    ]
+  },
+  {
+    question: "If today were a texture, what would it be?",
+    options: [
+      { text: "Smooth, polished marble", color: "PURPLE" },
+      { text: "Soft, well-worn leather", color: "ORANGE" },
+      { text: "Light, billowing silk", color: "CYAN" }
+    ]
+  },
+  {
+    question: "Which path would you prefer to walk?",
+    options: [
+      { text: "A winding trail with unexpected views", color: "YELLOW" },
+      { text: "A direct route through familiar territory", color: "BLUE" },
+      { text: "A scenic detour with interesting landmarks", color: "GREEN" }
+    ]
+  },
+  {
+    question: "What kind of light appeals to you now?",
+    options: [
+      { text: "Bright, direct sunlight", color: "YELLOW" },
+      { text: "Soft, diffused glow through curtains", color: "PURPLE" },
+      { text: "Cool, blue twilight just after sunset", color: "BLUE" }
+    ]
+  }
+];
+
 function DailyMoodQuestionnaire() {
     const navigate = useNavigate();
     const { userId } = useParams();
@@ -14,20 +66,50 @@ function DailyMoodQuestionnaire() {
     const [selectedOptions, setSelectedOptions] = useState([]);
     const [questionStartTime, setQuestionStartTime] = useState(Date.now());
     const [responseTimes, setResponseTimes] = useState([]);
+    const [retryCount, setRetryCount] = useState(0);
+    const [showColorEffect, setShowColorEffect] = useState(false);
+    const [selectedColor, setSelectedColor] = useState(null);
+    const [colorButtonIndex, setColorButtonIndex] = useState(null);
+    
+    // Add a color map with hex values for each color - UPDATED to match AuraQuestionnaire.js
+    const colorMap = {
+        'RED': '#FF0000',     // energy
+        'ORANGE': '#FFA500',  // warmth
+        'YELLOW': '#FFFF00',  // using standard yellow
+        'GREEN': '#00FF00',   // casual
+        'BLUE': '#0000FF',    // calmness
+        'PURPLE': '#800080',  // elegance
+        'CYAN': '#00FFFF'     // freshness
+    };
+    
+    // Add button refs to store direct references to option buttons
+    const buttonRefs = useRef([]);
     
     // Fetch AI-generated questions when component mounts
     useEffect(() => {
         const fetchQuestions = async () => {
             try {
                 setLoading(true);
+                setError(null);
                 console.log(`Fetching daily mood questions for user: ${userId}`);
+                
+                // Last retry - use default questions
+                if (retryCount >= 3) {
+                    console.log("Maximum retries reached. Using default questions.");
+                    setQuestions(DEFAULT_QUESTIONS);
+                    setSelectedOptions(new Array(DEFAULT_QUESTIONS.length).fill(-1));
+                    setLoading(false);
+                    setQuestionStartTime(Date.now());
+                    return;
+                }
                 
                 const response = await fetch(`http://localhost:5001/api/users/${userId}/daily-mood/questions`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ userId })
+                    body: JSON.stringify({ userId }),
+                    timeout: 60000 // 60 second timeout
                 });
                 
                 if (!response.ok) {
@@ -67,18 +149,45 @@ function DailyMoodQuestionnaire() {
                 }
             } catch (err) {
                 console.error('Error fetching questions:', err);
-                setError(`Failed to load questions: ${err.message}`);
+                
+                // Last retry attempt failed - use default questions
+                if (retryCount >= 2) {
+                    console.log("All retries failed. Using default questions as fallback.");
+                    setQuestions(DEFAULT_QUESTIONS);
+                    setSelectedOptions(new Array(DEFAULT_QUESTIONS.length).fill(-1));
+                    setLoading(false);
+                    setQuestionStartTime(Date.now());
+                    return;
+                }
+                
+                setError(`Failed to load questions: ${err.message}. Please try again.`);
                 setLoading(false);
+                
+                // Auto-retry after a delay, up to 3 times
+                const nextRetry = retryCount + 1;
+                setError(`Failed to load questions. Retrying (${nextRetry}/3)...`);
+                setRetryCount(nextRetry);
+                setTimeout(() => {
+                    fetchQuestions();
+                }, 3000); // 3 second delay between retries
             }
         };
         
         fetchQuestions();
-    }, [userId]);
+    }, [userId, retryCount]);
     
     // Function to skip the questionnaire and go back to dashboard
     const handleSkipQuestionnaire = () => {
         navigate(`/auth/${userId}/dashboard`);
     };
+    
+    // Update useEffect to initialize button refs for the current question
+    useEffect(() => {
+        // Reset button refs array when question changes
+        if (questions.length > 0) {
+            buttonRefs.current = buttonRefs.current.slice(0, questions[currentQuestion]?.options.length || 0);
+        }
+    }, [currentQuestion, questions]);
     
     const handleOptionSelect = (optionIndex) => {
         // Record response time before updating state
@@ -87,51 +196,112 @@ function DailyMoodQuestionnaire() {
         console.log(`Question ${currentQuestion + 1} response time: ${responseTime}ms`);
         
         // Update response times array
-        setResponseTimes([...responseTimes, responseTime]);
+        const updatedResponseTimes = [...responseTimes, responseTime];
+        setResponseTimes(updatedResponseTimes);
         
+        // Update selected option state
         const newSelectedOptions = [...selectedOptions];
         newSelectedOptions[currentQuestion] = optionIndex;
         setSelectedOptions(newSelectedOptions);
         
-        // Automatically move to the next question or submit if this is the last question
-        if (currentQuestion < questions.length - 1) {
-            // Move to next question
-            setCurrentQuestion(currentQuestion + 1);
-            // Reset timer for the next question
-            setQuestionStartTime(Date.now());
+        // Get the selected color for the visual effect
+        const selectedOption = questions[currentQuestion].options[optionIndex];
+        const color = selectedOption?.color || 'BLUE';
+        setSelectedColor(color);
+        console.log(`Selected color: ${color}`);
+        
+        // Don't need to set showColorEffect state flag anymore since we're using direct DOM manipulation
+        setColorButtonIndex(optionIndex);
+        
+        // Direct DOM manipulation like in AuraQuestionnaire.js
+        const button = buttonRefs.current[optionIndex];
+        if (button) {
+            // Get hex color from the color map
+            const hexColor = colorMap[color] || colorMap['BLUE'];
+            console.log(`Applying animation with color: ${hexColor}`);
+            
+            // Create a gradient of this color (light to dark)
+            button.style.background = `linear-gradient(90deg, ${hexColor}44, ${hexColor}88, ${hexColor}cc, ${hexColor})`;
+            button.style.backgroundSize = '300% 100%';
+            button.style.border = '3px solid white';
+            button.style.boxShadow = `0 0 20px ${hexColor}`;
+            
+            // Create animation manually
+            let start = null;
+            const duration = 800; // 800ms duration
+            
+            function animate(timestamp) {
+                if (!start) start = timestamp;
+                const progress = timestamp - start;
+                
+                // Calculate background position based on progress
+                const position = (progress / duration) * 100;
+                button.style.backgroundPosition = `${position}% 0%`;
+                
+                if (progress < duration) {
+                    window.requestAnimationFrame(animate);
+                }
+            }
+            
+            window.requestAnimationFrame(animate);
+            console.log('Animation started');
         } else {
-            // This was the last question, submit the responses
-            handleSubmit();
+            console.warn(`Button reference not found for index ${optionIndex}`);
         }
+        
+        // Wait for animation to complete before moving to next question
+        setTimeout(() => {
+            // Reset the button styles before advancing
+            const button = buttonRefs.current[optionIndex];
+            if (button) {
+                button.style.background = '';
+                button.style.backgroundSize = '';
+                button.style.backgroundPosition = '';
+                button.style.border = '';
+                button.style.boxShadow = '';
+            }
+            
+            // After showing the color effect, move to next question or submit
+            if (currentQuestion < questions.length - 1) {
+                // Move to next question
+                setCurrentQuestion(currentQuestion + 1);
+                // Reset timer for the next question
+                setQuestionStartTime(Date.now());
+            } else {
+                // This was the last question, submit the responses
+                // We need to pass the updated selectedOptions since state updates are async
+                handleSubmit(newSelectedOptions, updatedResponseTimes);
+            }
+        }, 800); // Show color for 800ms
     };
     
-    // Function to calculate aura shape based on response times (like in AuraQuestionnaire)
-    const calculateAuraShape = () => {
-        if (responseTimes.length === 0) return 'balanced';
-
-        const avgResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
-        console.log("Average response time:", avgResponseTime); // Debug log
+    // Update the calculateAuraShape function to align with the user's requirements
+    const calculateAuraShape = (times = null) => {
+        const timeValues = times || responseTimes;
         
-        const fastestResponse = Math.min(...responseTimes);
-        const slowestResponse = Math.max(...responseTimes);
-        const timeRange = slowestResponse - fastestResponse;
+        if (timeValues.length === 0) return 'balanced';
 
+        const avgResponseTime = timeValues.reduce((a, b) => a + b, 0) / timeValues.length;
+        console.log("Average response time:", avgResponseTime);
+        
         // Define thresholds (in milliseconds)
-        const QUICK_THRESHOLD = 2000;  // 2 seconds
-        const SLOW_THRESHOLD = 3500;   // 3.5 seconds
+        const FAST_THRESHOLD = 2000;  // 2 seconds - sparkling
+        const MEDIUM_FAST_THRESHOLD = 3000;  // 3 seconds - flowing
+        const MEDIUM_THRESHOLD = 4000;  // 4 seconds - pulsing
+        // everything > MEDIUM_THRESHOLD is balanced/glowing
 
-        if (avgResponseTime < QUICK_THRESHOLD) {
-            console.log("Shape: sparkling");
-            return 'sparkling';  // Quick, energetic responses
-        } else if (avgResponseTime > SLOW_THRESHOLD) {
-            console.log("Shape: flowing");
-            return 'flowing';    // Slow, thoughtful responses
-        } else if (timeRange > 3000) {  // High variance in response times
-            console.log("Shape: pulsing");
-            return 'pulsing';    // Variable, dynamic responses
+        if (avgResponseTime < FAST_THRESHOLD) {
+            console.log("Shape: sparkling (FAST)");
+            return 'sparkling';  // Fast, energetic responses
+        } else if (avgResponseTime < MEDIUM_FAST_THRESHOLD) {
+            console.log("Shape: flowing (MEDIUM FAST)");
+            return 'flowing';    // Medium-fast, flowing responses
+        } else if (avgResponseTime < MEDIUM_THRESHOLD) {
+            console.log("Shape: pulsing (MEDIUM)");
+            return 'pulsing';    // Medium, dynamic responses
         } else {
-            console.log("Shape: balanced");
-            return 'balanced';   // Consistent, moderate responses
+            console.log("Shape: balanced (SLOW)");
+            return 'balanced';   // Slow, thoughtful responses
         }
     };
     
@@ -160,13 +330,18 @@ function DailyMoodQuestionnaire() {
         }
     };
     
-    const handleSubmit = async () => {
+    const handleSubmit = async (updatedOptions = null, updatedTimes = null) => {
         try {
             setSubmitting(true);
             setError(null);
             
+            // Use the passed options array if provided, otherwise use the state
+            const optionsToUse = updatedOptions || selectedOptions;
+            // Use updated times if provided
+            const timesToUse = updatedTimes || responseTimes;
+            
             // Check if all questions have been answered
-            if (selectedOptions.some(option => option === -1)) {
+            if (optionsToUse.some(option => option === -1)) {
                 setError('Please answer all questions before submitting.');
                 setSubmitting(false);
                 return;
@@ -174,18 +349,17 @@ function DailyMoodQuestionnaire() {
             
             // Create an array of responses (the selected option for each question)
             const responseTexts = questions.map((question, index) => {
-                const selectedOptionIndex = selectedOptions[index];
+                const selectedOptionIndex = optionsToUse[index];
                 const selectedOption = question.options[selectedOptionIndex];
                 return selectedOption.text || selectedOption; // Handle both new and old format
             });
             
             // Calculate aura shape based on response times
-            const auraShape = calculateAuraShape();
+            const auraShape = calculateAuraShape(timesToUse);
             console.log('Calculated aura shape for server:', auraShape);
             
             console.log('Submitting responses for analysis:', {
-                questions: questions,
-                responses: responseTexts,
+                responses: responseTexts.length,
                 aura_shape: auraShape,
                 userId
             });
@@ -303,51 +477,57 @@ function DailyMoodQuestionnaire() {
             }
 
             // Calculate response speed
-            const responseSpeed = 'medium'; // Always use medium speed
+            const responseSpeed = calculateResponseSpeed();
 
-            const updateResponse = await fetch(`http://localhost:5001/api/users/${userId}/aura`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    aura_color: auraData.aura_color,
-                    aura_shape: auraData.aura_shape,
-                    aura_color1: aura_color1,
-                    aura_color2: aura_color2,
-                    aura_color3: aura_color3,
-                    response_speed: responseSpeed
-                })
-            });
-            
-            if (!updateResponse.ok) {
-                throw new Error(`Failed to update aura: ${updateResponse.status}`);
+            try {
+                const updateResponse = await fetch(`http://localhost:5001/api/users/${userId}/aura`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        aura_color: auraData.aura_color,
+                        aura_shape: auraData.aura_shape,
+                        aura_color1: aura_color1,
+                        aura_color2: aura_color2,
+                        aura_color3: aura_color3,
+                        response_speed: responseSpeed
+                    })
+                });
+                
+                if (!updateResponse.ok) {
+                    throw new Error(`Failed to update aura: ${updateResponse.status}`);
+                }
+                
+                console.log('Successfully updated user aura');
+                
+                // Update localStorage with new aura data
+                const storedUser = localStorage.getItem('user');
+                if (storedUser) {
+                    const userData = JSON.parse(storedUser);
+                    const updatedUserData = {
+                        ...userData,
+                        aura_color: auraData.aura_color,
+                        aura_shape: auraData.aura_shape,
+                        mood_summary: auraData.mood_summary,
+                        aura_color1: aura_color1,
+                        aura_color2: aura_color2, 
+                        aura_color3: aura_color3,
+                        response_speed: responseSpeed
+                    };
+                    localStorage.setItem('user', JSON.stringify(updatedUserData));
+                    console.log('Updated localStorage with new aura data');
+                }
+                
+                setSubmitting(false);
+                
+                // Navigate to dashboard after successful submission
+                navigate(`/auth/${userId}/dashboard`);
+            } catch (err) {
+                console.error('Error updating user aura:', err);
+                setError(`Aura analysis complete, but failed to update your profile: ${err.message}`);
+                setSubmitting(false);
             }
-            
-            console.log('Successfully updated user aura');
-            
-            // Update localStorage with new aura data
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-                const userData = JSON.parse(storedUser);
-                const updatedUserData = {
-                    ...userData,
-                    aura_color: auraData.aura_color,
-                    aura_shape: auraData.aura_shape,
-                    mood_summary: auraData.mood_summary,
-                    aura_color1: aura_color1,
-                    aura_color2: aura_color2, 
-                    aura_color3: aura_color3,
-                    response_speed: responseSpeed
-                };
-                localStorage.setItem('user', JSON.stringify(updatedUserData));
-                console.log('Updated localStorage with new aura data');
-            }
-            
-            setSubmitting(false);
-            
-            // Navigate to dashboard after successful submission
-            navigate(`/auth/${userId}/dashboard`);
             
         } catch (err) {
             console.error('Error submitting responses:', err);
@@ -366,6 +546,19 @@ function DailyMoodQuestionnaire() {
                     <h2>Daily Mood Check</h2>
                     <div className="loading-spinner"></div>
                     <p>Loading your daily questions...</p>
+                    {error && <p className="error-message">{error}</p>}
+                    <button 
+                        onClick={() => setRetryCount(retryCount + 1)}
+                        className="retry-button"
+                    >
+                        Retry Now
+                    </button>
+                    <button 
+                        onClick={handleSkipQuestionnaire}
+                        className="skip-button"
+                    >
+                        Skip for Today
+                    </button>
                 </div>
                 <div className='image-background'>
                     <img src='/assets/images/opening.png' alt="background"/>
@@ -380,13 +573,21 @@ function DailyMoodQuestionnaire() {
             <div className="daily-mood-container">
                 <div className="daily-mood-box">
                     <h2>Daily Mood Check</h2>
-                    <p className="error-message">{error || "No questions available. Please try again later."}</p>
-                    <button 
-                        onClick={() => window.location.reload()}
-                        className="submit-button"
-                    >
-                        Reload
-                    </button>
+                    <p className="error-message">{error || "No questions available. Please try again."}</p>
+                    <div className="button-group">
+                        <button 
+                            onClick={() => {setRetryCount(0); window.location.reload();}}
+                            className="submit-button"
+                        >
+                            Reload
+                        </button>
+                        <button 
+                            onClick={handleSkipQuestionnaire} 
+                            className="skip-button"
+                        >
+                            Skip for Today
+                        </button>
+                    </div>
                 </div>
                 <div className='image-background'>
                     <img src='/assets/images/opening.png' alt="background"/>
@@ -428,13 +629,16 @@ function DailyMoodQuestionnaire() {
                         {questions[currentQuestion]?.options.map((option, index) => {
                             // Handle both legacy format (string options) and new format (object with text and color)
                             const optionText = typeof option === 'object' ? option.text : option;
-                            // We're not showing color borders anymore
+                            
                             return (
                                 <button
                                     key={index}
                                     className={`option-button ${selectedOptions[currentQuestion] === index ? 'selected' : ''}`}
                                     onClick={() => handleOptionSelect(index)}
                                     disabled={submitting}
+                                    ref={(el) => {
+                                        buttonRefs.current[index] = el;
+                                    }}
                                 >
                                     {optionText}
                                 </button>

@@ -13,7 +13,12 @@ const AuraVisualization = ({ auraColor, auraShape, responseSpeed }) => {
     };
 
     useEffect(() => {
-        console.log('Props changed:', { auraColor, auraShape, responseSpeed: 'medium' });
+        console.log('AuraVisualization Props:', { 
+            auraColor, 
+            auraShape, 
+            responseSpeed: 'medium',
+            isValidShape: ['sparkling', 'flowing', 'pulsing', 'balanced'].includes(auraShape)
+        });
         
         // Check if canvas exists before proceeding
         if (!canvasRef.current) {
@@ -141,24 +146,28 @@ const AuraVisualization = ({ auraColor, auraShape, responseSpeed }) => {
         ctx.fill();
     };
 
+    // Make sure auraShape is valid
+    const validShapes = ['sparkling', 'flowing', 'pulsing', 'balanced'];
+    const validatedShape = validShapes.includes(auraShape) ? auraShape : 'balanced';
+
     // Add responseSpeed to the class for CSS animations - ALWAYS USE MEDIUM
     const speedClass = 'speed-medium';
 
     return (
         <div className={`aura-container ${speedClass}`}>
-            <div className="aura-circle">
+            <div className={`aura-circle aura-shape-${validatedShape}`}>
                 <canvas
                     ref={canvasRef}
                     className="gradient-canvas"
                 />
-                <div className={`aura-decoration aura-decoration-${auraShape}`}>
-                    {auraShape === 'balanced' && (
+                <div className={`aura-decoration aura-decoration-${validatedShape}`}>
+                    {validatedShape === 'balanced' && (
                         <>
                             <div className="balanced-glow" />
                             <div className="balanced-glow-inner" />
                         </>
                     )}
-                    {auraShape === 'sparkling' && (
+                    {validatedShape === 'sparkling' && (
                         <>
                             <div className="sparkle sparkle-1" />
                             <div className="sparkle sparkle-2" />
@@ -172,14 +181,14 @@ const AuraVisualization = ({ auraColor, auraShape, responseSpeed }) => {
                             <div className="sparkle sparkle-10" />
                         </>
                     )}
-                    {auraShape === 'pulsing' && (
+                    {validatedShape === 'pulsing' && (
                         <>
                             <div className="pulse-ring" />
                             <div className="pulse-ring pulse-ring-2" />
                             <div className="pulse-ring pulse-ring-3" />
                         </>
                     )}
-                    {auraShape === 'flowing' && (
+                    {validatedShape === 'flowing' && (
                         <div className="orbit-container">
                             <div className="flow-circle" />
                             <div className="flow-circle" />
