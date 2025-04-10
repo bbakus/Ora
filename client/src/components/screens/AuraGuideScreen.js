@@ -124,13 +124,21 @@ function AuraGuideScreen() {
                 {/* Aura Shapes Grid */}
                 <div className="aura-shapes-grid">
                     <div 
-                        className="shape-card sparkle-shape"
+                        className="shape-card aura-guide-sparkle-shape"
                         onClick={() => handleShapeClick('sparkling')}
                     >
-                        <div className="shape-animation-aura-guide">
-                            <div className="aura-decoration-aura-guide aura-decoration-aura-guide-sparkling">
-                                <div className="sparkle-aura-guide sparkle-1-aura-guide"></div>
-                                
+                        <div className="shape-animation">
+                            <div className="aura-decoration aura-guide-aura-decoration-sparkling">
+                                <div className="sparkle aura-guide-sparkle-1"></div>
+                                <div className="sparkle aura-guide-sparkle-2"></div>
+                                <div className="sparkle aura-guide-sparkle-3"></div>
+                                <div className="sparkle aura-guide-sparkle-4"></div>
+                                <div className="sparkle aura-guide-sparkle-5"></div>
+                                <div className="sparkle aura-guide-sparkle-6"></div>
+                                <div className="sparkle aura-guide-sparkle-7"></div>
+                                <div className="sparkle aura-guide-sparkle-8"></div>
+                                <div className="sparkle aura-guide-sparkle-9"></div>
+                                <div className="sparkle aura-guide-sparkle-10"></div>
                             </div>
                         </div>
                     </div>
@@ -139,24 +147,32 @@ function AuraGuideScreen() {
                         className="shape-card flowing-shape"
                         onClick={() => handleShapeClick('flowing')}
                     >
-                        <div className="shape-animation-aura-guide">
-                            <div className="aura-decoration-aura-guide aura-decoration-aura-guide-flowing">
+                        <div className="shape-animation">
+                            <div className="aura-decoration aura-guide-aura-decoration-flowing">
                                 <div className="orbit-container-aura-guide">
                                     <div className="flow-circle-aura-guide"></div>
-                                    
+                                    <div className="flow-circle-aura-guide"></div>
+                                    <div className="flow-circle-aura-guide"></div>
+                                    <div className="flow-circle-aura-guide"></div>
+                                    <div className="flow-circle-aura-guide"></div>
+                                    <div className="flow-circle-aura-guide"></div>
+                                    <div className="flow-circle-aura-guide"></div>
+                                    <div className="flow-circle-aura-guide"></div>
+                                    <div className="flow-circle-aura-guide"></div>
+                                    <div className="flow-circle-aura-guide"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div 
-                        className="shape-card pulsing-shape"
+                        className="shape-card aura-guide-pulsing-shape"
                         onClick={() => handleShapeClick('pulsing')}
                     >
                         <div className="shape-animation">
                             <div className="aura-decoration-aura-guide aura-decoration-aura-guide-pulsing">
                                 <div className="pulse-ring-aura-guide"></div>
-                            
+                                
                             </div>
                         </div>
                     </div>
