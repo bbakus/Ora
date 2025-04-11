@@ -322,3 +322,40 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Google Maps Platform for geospatial services
 - The Flask and React communities for excellent documentation
 - Contributors to the open-source libraries utilized in this project
+
+## Deployment to Render
+
+This application is configured for easy deployment to Render.com.
+
+### Option 1: Deploy with Blueprint (Recommended)
+
+1. Fork this repository to your GitHub account
+2. Sign up for a Render account if you don't have one
+3. From the Render dashboard, click on "New" and select "Blueprint"
+4. Connect your GitHub account and select this repository
+5. Render will automatically create your web service and database based on the render.yaml configuration
+6. Once deployed, you'll need to set the following environment variables in the Render dashboard:
+   - OPENAI_API_KEY: Your OpenAI API key
+   - GOOGLE_MAPS_API_KEY: Your Google Maps API key
+
+### Option 2: Manual Deployment
+
+#### Database Setup
+1. Create a new PostgreSQL database in Render
+2. Note the internal and external connection strings
+
+#### Web Service Setup
+1. Create a new Web Service in Render
+2. Connect to your GitHub repository
+3. Use the following settings:
+   - Environment: Python 3
+   - Build Command: `cd server && pip install -r ../requirements.txt && cd ../client && npm install && npm run build && cp -r build/* ../server/public/ && cd ../server && chmod +x update_runtime_config.sh && ./update_runtime_config.sh`
+   - Start Command: `cd server && python run.py`
+4. Add the following environment variables:
+   - FLASK_ENV: production
+   - SECRET_KEY: (generate a random string)
+   - DATABASE_URL: (your database connection string)
+   - OPENAI_API_KEY: Your OpenAI API key
+   - GOOGLE_MAPS_API_KEY: Your Google Maps API key
+
+The application will automatically use the Render deployment URL for API requests.

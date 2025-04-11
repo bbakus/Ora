@@ -1,0 +1,13 @@
+{
+  "name": "ora-server",
+  "version": "1.0.0",
+  "description": "Ora API server",
+  "main": "run.py",
+  "scripts": {
+    "start": "python run.py",
+    "postinstall": "pip install -r ../requirements.txt"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+} 
