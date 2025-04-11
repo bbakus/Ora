@@ -8,10 +8,32 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from server.app import create_app
 from server.extensions import db, migrate
 from flask_migrate import upgrade, init, migrate as create_migration
+from sqlalchemy.exc import OperationalError
 
 def init_db():
     """Initialize the database for deployment"""
     print("Initializing database for deployment...")
+    
+    # Check if DATABASE_URL is set
+    database_url = os.environ.get('DATABASE_URL')
+    if not database_url:
+        print("ERROR: DATABASE_URL environment variable is not set!")
+        print("Please set the DATABASE_URL environment variable to your PostgreSQL connection string.")
+        sys.exit(1)
+    
+    # Print the database URL (with password redacted for security)
+    safe_url = database_url
+    if '@' in safe_url and ':' in safe_url:
+        # Extract credentials part
+        creds_part = safe_url.split('@')[0]
+        if ':' in creds_part:
+            # Replace password with asterisks
+            username = creds_part.split(':')[0]
+            safe_url = safe_url.replace(creds_part, f"{username}:********")
+    
+    print(f"Using database URL: {safe_url}")
+    
+    # Create app with configuration
     app = create_app()
     
     # Configure Flask-Migrate to use the root migrations directory
@@ -21,6 +43,11 @@ def init_db():
     
     with app.app_context():
         try:
+            # Test database connection
+            print("Testing database connection...")
+            db.engine.connect()
+            print("Database connection successful!")
+            
             # Check if migrations directory exists
             if not os.path.exists(migrations_dir):
                 print(f"Migrations directory not found at {migrations_dir}. Initializing...")
@@ -47,6 +74,10 @@ def init_db():
             db.create_all()
             
             print("Database initialization complete.")
+        except OperationalError as e:
+            print(f"ERROR: Could not connect to the database: {e}")
+            print("Please check your DATABASE_URL environment variable and ensure your PostgreSQL database is running.")
+            sys.exit(1)
         except Exception as e:
             print(f"Error initializing database: {e}")
             sys.exit(1)
