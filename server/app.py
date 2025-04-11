@@ -53,6 +53,45 @@ def create_app(config_class=Config, instance_path=None):
     @app.route('/api/test')
     def test():
         return {'status': 'ok', 'message': 'API is working'}, 200
+        
+    @app.route('/api/debug/setup_db', methods=['GET'])
+    def setup_db():
+        """Debug route to set up database tables"""
+        try:
+            # Drop all tables first
+            db.drop_all()
+            
+            # Create tables in specific order
+            tables_order = [
+                "users",
+                "tags",
+                "locations",
+                "collections",
+                "collection_locations",
+                "collection_tags",
+                "reviews",
+                "friend_requests"
+            ]
+            
+            # Create metadata and tables directly
+            metadata = db.metadata
+            for table_name in tables_order:
+                if table_name in metadata.tables:
+                    try:
+                        metadata.tables[table_name].create(db.engine)
+                        print(f"Created table: {table_name}")
+                    except Exception as e:
+                        print(f"Error creating {table_name}: {e}")
+            
+            return {
+                'status': 'success', 
+                'message': 'Database tables recreated successfully'
+            }, 200
+        except Exception as e:
+            return {
+                'status': 'error',
+                'message': f'Error setting up database: {str(e)}'
+            }, 500
 
     # Catch-all route to serve React app for any path not handled by API
     @app.route('/<path:path>')
