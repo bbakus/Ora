@@ -641,6 +641,7 @@ def seed_database():
                             
                             # Add to database
                             db.session.add(location)
+                            db.session.flush()  # This gives the location an ID without committing the entire transaction
                             total_locations += 1
                             
                             # Add reviews to the database from Google Places API
@@ -814,6 +815,7 @@ def create_sample_locations(user, collection):
         )
         
         db.session.add(location)
+        db.session.flush()  # This gives the location an ID without committing the entire transaction
         
         # Create some sample reviews
         sample_reviews = [
