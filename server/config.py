@@ -16,15 +16,22 @@ class Config:
     
     # Add options for handling foreign key constraints and extending timeout
     SQLALCHEMY_ENGINE_OPTIONS = {
-        # Increase connection timeout for slow startups
-        "connect_args": {
-            "connect_timeout": 30,
-        },
         # Increase pool recycle time to prevent connection timeouts
         "pool_recycle": 3600,
         # Reconnect if disconnected
         "pool_pre_ping": True
     }
+    
+    # Add connect_timeout only for PostgreSQL connections
+    if SQLALCHEMY_DATABASE_URI.startswith('postgresql://'):
+        SQLALCHEMY_ENGINE_OPTIONS["connect_args"] = {
+            "connect_timeout": 30
+        }
+    # Add foreign_keys option only for SQLite connections
+    elif SQLALCHEMY_DATABASE_URI.startswith('sqlite://'):
+        SQLALCHEMY_ENGINE_OPTIONS["connect_args"] = {
+            "check_same_thread": False
+        }
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
