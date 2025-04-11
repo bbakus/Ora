@@ -9,7 +9,7 @@ from server.app import create_app
 from server.extensions import db, migrate
 from flask_migrate import upgrade, init, migrate as create_migration
 from sqlalchemy.exc import OperationalError
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 
 # Import all models to ensure they're registered with SQLAlchemy
 from server.models.user import User
@@ -57,25 +57,9 @@ def init_db():
             db.engine.connect()
             print("Database connection successful!")
             
-            # Temporarily disable foreign key constraints
-            print("Temporarily disabling foreign key constraints...")
-            db.session.execute(text('SET CONSTRAINTS ALL DEFERRED'))
-            
-            # Create tables directly in correct order, bypassing migrations for now
-            print("Creating tables directly in correct order...")
-            # Order matters: independent tables first, then tables with dependencies
-            models = [User, Tag, Location, Collection, Review, FriendRequest]
-            
-            for model in models:
-                print(f"Creating table for model: {model.__name__}")
-                if not db.engine.dialect.has_table(db.engine, model.__tablename__):
-                    model.__table__.create(db.engine)
-            
-            # Re-enable foreign key constraints
-            print("Re-enabling foreign key constraints...")
-            db.session.execute(text('SET CONSTRAINTS ALL IMMEDIATE'))
-            db.session.commit()
-            
+            # Simply create all tables directly
+            print("Creating all tables directly...")
+            db.create_all()
             print("Tables created successfully!")
             
             # Check if migrations directory exists
