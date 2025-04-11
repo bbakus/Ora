@@ -323,6 +323,54 @@ function DiscoverScreen() {
     }
   }, [state, addRecentLocation]);
 
+  // Check for location data in localStorage (for friend view navigation)
+  useEffect(() => {
+    const storedLocationData = localStorage.getItem('selectedLocation');
+    const shouldOpenDetail = localStorage.getItem('openLocationDetail');
+    
+    if (storedLocationData && shouldOpenDetail === 'true') {
+      try {
+        const locationData = JSON.parse(storedLocationData);
+        console.log("Location loaded from localStorage:", locationData);
+        
+        // Set the selected location to open the modal
+        setSelectedLocation(locationData);
+        
+        // Add to recent locations if the function is available
+        if (addRecentLocation && typeof addRecentLocation === 'function') {
+          addRecentLocation(locationData);
+        }
+        
+        // Center the map on the location
+        if (mapRef.current && locationData.latitude && locationData.longitude) {
+          const locationPosition = { 
+            lat: locationData.latitude, 
+            lng: locationData.longitude 
+          };
+          
+          // Update ref first to prevent controlled/uncontrolled switching issues
+          mapCenterRef.current = locationPosition;
+          
+          // Then try to update the actual map
+          if (mapLoaded) {
+            mapRef.current.panTo(locationPosition);
+          }
+        }
+        
+        // Clear the localStorage flags to prevent reopening on reload
+        localStorage.removeItem('selectedLocation');
+        localStorage.removeItem('openLocationDetail');
+        
+        // Note: We keep sourceUserId in localStorage for back navigation
+        // It will be cleared when the back button is used
+      } catch (error) {
+        console.error("Error processing location from localStorage:", error);
+        localStorage.removeItem('selectedLocation');
+        localStorage.removeItem('openLocationDetail');
+      }
+    }
+  }, [mapLoaded, addRecentLocation]);
+
   // Function to scroll the filter bar
   const scrollFilters = (direction) => {
     if (!filterScrollRef.current) return;
@@ -898,10 +946,21 @@ function DiscoverScreen() {
 
   // Handle back button click
   const handleBackClick = () => {
+    // First check URL params for userId
     if (userId) {
       navigate(`/auth/${userId}/dashboard`);
     } else {
-      navigate('/');
+      // If no userId in URL, check localStorage for sourceUserId
+      const sourceUserId = localStorage.getItem('sourceUserId');
+      if (sourceUserId) {
+        // Navigate back to the source dashboard using the stored userId
+        navigate(`/auth/${sourceUserId}/dashboard`);
+        // Clear the sourceUserId once used
+        localStorage.removeItem('sourceUserId');
+      } else {
+        // Last resort - go to landing page if no userId found
+        navigate('/');
+      }
     }
   };
 

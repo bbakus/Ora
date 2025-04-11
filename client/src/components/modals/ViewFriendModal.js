@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from "react";
 import AuraVisualization from '../AuraVisualization';
-import CollectionLocationsModal from "./CollectionLocationsModal";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import './ViewFriendModal.css';
 
 function ViewFriendModal({friendId, onClose}) {
@@ -9,8 +8,10 @@ function ViewFriendModal({friendId, onClose}) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedCollection, setSelectedCollection] = useState(null);
-    const [showLocationsModal, setShowLocationsModal] = useState(false);
+    const [showCollectionLocations, setShowCollectionLocations] = useState(false);
+    const [copyingCollection, setCopyingCollection] = useState(false);
     const { userId } = useParams();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchFriendData = async () => {
@@ -117,49 +118,102 @@ function ViewFriendModal({friendId, onClose}) {
     };
 
     const handleCopyCollection = async (collectionId) => {
+        console.log(`Copying collection ${collectionId} from user ${friendId} to user ${userId}`);
+        
         try {
-            const response = await fetch(`http://localhost:5001/api/users/${userId}/collections`, {
+            setCopyingCollection(true);
+            
+            // Simple direct API call with proper headers
+            const response = await fetch(`http://localhost:5001/api/users/${userId}/collections/copy`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
                 body: JSON.stringify({
-                    sourceUserId: friendId,
-                    collectionId: collectionId
+                    sourceUserId: parseInt(friendId),
+                    collectionId: parseInt(collectionId)
                 })
             });
-
-            if (!response.ok) {
-                throw new Error('Failed to copy collection');
+            
+            console.log('Response status:', response.status);
+            
+            // Parse the response
+            const data = await response.text();
+            console.log('Response text:', data);
+            
+            let responseData;
+            try {
+                responseData = JSON.parse(data);
+                console.log('Parsed response:', responseData);
+            } catch (e) {
+                console.log('Could not parse response as JSON');
             }
-
-            // Refresh friend data to show updated collections
-            const updatedResponse = await fetch(`http://localhost:5001/api/users/${friendId}`);
-            const updatedData = await updatedResponse.json();
-            setFriendData(updatedData);
-        } catch (err) {
-            setError(err.message);
+            
+            if (!response.ok) {
+                throw new Error(responseData?.error || `Server error: ${response.status}`);
+            }
+            
+            // Show success message
+            alert('Collection copied successfully!');
+        } catch (error) {
+            console.error('Error copying collection:', error);
+            alert(`Failed to copy collection: ${error.message}`);
+        } finally {
+            setCopyingCollection(false);
         }
     };
 
-    const handleAddLocation = async (locationId, targetCollectionId) => {
-        try {
-            const response = await fetch(`http://localhost:5001/api/users/${userId}/collections/${targetCollectionId}/locations`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    locationId: locationId
-                })
-            });
+    const handleViewCollection = (collection) => {
+        setSelectedCollection(collection);
+        setShowCollectionLocations(true);
+    };
 
-            if (!response.ok) {
-                throw new Error('Failed to add location to collection');
+    const getLocationAuraGradient = (location) => {
+        if (!location) return 'linear-gradient(125deg, #6d4aff, #9e8aff)';
+        
+        // Check for direct aura color fields first
+        if (location.aura_color1 && location.aura_color2) {
+            if (location.aura_color3) {
+                return `linear-gradient(125deg, ${location.aura_color1}, ${location.aura_color2}, ${location.aura_color3})`;
             }
-        } catch (err) {
-            setError(err.message);
+            return `linear-gradient(125deg, ${location.aura_color1}, ${location.aura_color2})`;
+        } 
+        // Then check for aura_color string
+        else if (location.aura_color) {
+            if (location.aura_color.includes('gradient')) {
+                return location.aura_color;
+            } else {
+                const colors = location.aura_color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
+                if (colors && colors.length >= 3) {
+                    return `linear-gradient(125deg, ${colors[0]}, ${colors[1]}, ${colors[2]})`;
+                } else if (colors && colors.length >= 2) {
+                    return `linear-gradient(125deg, ${colors[0]}, ${colors[1]})`;
+                } else if (colors && colors.length === 1) {
+                    return colors[0]; // Single solid color
+                }
+            }
         }
+        
+        // Default
+        return 'linear-gradient(125deg, #6d4aff, #9e8aff)';
+    };
+
+    const handleViewLocationOnMap = (location) => {
+        // Close the current modal
+        onClose();
+        
+        // Set the complete location data in localStorage - this is key for the modal to open
+        localStorage.setItem('selectedLocation', JSON.stringify(location));
+        
+        // Set the open flag separately
+        localStorage.setItem('openLocationDetail', 'true');
+        
+        // Also store the source dashboard userId to enable proper back navigation
+        localStorage.setItem('sourceUserId', userId);
+        
+        // Navigate to discover screen with userId to ensure back button works correctly
+        navigate(`/discover/${userId}`);
     };
 
     if (loading) {
@@ -189,6 +243,8 @@ function ViewFriendModal({friendId, onClose}) {
         <div className="view-friend-modal-container">
             <div className="view-friend-modal-content">
                 <button className="view-friend-modal-close-button" onClick={onClose}>×</button>
+                
+               
                 
                 <div className="view-friend-modal-header">
                     <h2>{friendData.username}</h2>
@@ -230,10 +286,7 @@ function ViewFriendModal({friendId, onClose}) {
                                     <div 
                                         key={collection.id} 
                                         className="view-friend-modal-collection-card"
-                                        onClick={() => {
-                                            setSelectedCollection(collection);
-                                            setShowLocationsModal(true);
-                                        }}
+                                        onClick={() => handleViewCollection(collection)}
                                     >
                                         <div className="collection-aura" style={{ background: auraColor }}></div>
                                         <div className="collection-info">
@@ -247,8 +300,11 @@ function ViewFriendModal({friendId, onClose}) {
                                                     e.stopPropagation();
                                                     handleCopyCollection(collection.id);
                                                 }}
+                                                disabled={copyingCollection}
                                             >
-                                                <span className="material-icons">content_copy</span>
+                                                <span className="material-icons">
+                                                    {copyingCollection ? 'hourglass_empty' : 'content_copy'}
+                                                </span>
                                             </button>
                                         </div>
                                     </div>
@@ -256,22 +312,80 @@ function ViewFriendModal({friendId, onClose}) {
                             })}
                         </div>
                     ) : (
-                        <p className="no-collections">No collections yet</p>
+                        <p className="no-collections">No collections available</p>
                     )}
                 </div>
-            </div>
 
-            {showLocationsModal && selectedCollection && (
-                <CollectionLocationsModal
-                    collection={selectedCollection}
-                    onClose={() => {
-                        setShowLocationsModal(false);
-                        setSelectedCollection(null);
-                    }}
-                    onAddLocation={handleAddLocation}
-                    isFriendCollection={true}
-                />
-            )}
+                {showCollectionLocations && selectedCollection && (
+                    <div className="friend-collection-locations-modal">
+                        <div className="friend-collection-locations-content">
+                            <div className="friend-collection-locations-header" style={{ 
+                                background: selectedCollection.locations && 
+                                         selectedCollection.locations.length > 0 ? 
+                                         getLocationAuraGradient(selectedCollection.locations[0]) : 
+                                         'linear-gradient(125deg, #6d4aff, #9e8aff)'
+                            }}>
+                                <h3>{selectedCollection.name}</h3>
+                                <button 
+                                    className="close-button"
+                                    onClick={() => setShowCollectionLocations(false)}
+                                >
+                                    <span className="material-icons">close</span>
+                                </button>
+                            </div>
+                            <div className="friend-collection-locations-grid">
+                                {selectedCollection.locations.map((location) => {
+                                    // Determine aura gradient for the location
+                                    let locationAura = 'linear-gradient(125deg, #6d4aff, #9e8aff)';
+                                    
+                                    // Check for direct aura color fields first
+                                    if (location.aura_color1 && location.aura_color2) {
+                                        locationAura = `linear-gradient(125deg, ${location.aura_color1}, ${location.aura_color2})`;
+                                        if (location.aura_color3) {
+                                            locationAura = `linear-gradient(125deg, ${location.aura_color1}, ${location.aura_color2}, ${location.aura_color3})`;
+                                        }
+                                    } 
+                                    // Then check for aura_color string
+                                    else if (location.aura_color) {
+                                        if (location.aura_color.includes('gradient')) {
+                                            locationAura = location.aura_color;
+                                        } else {
+                                            const colors = location.aura_color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
+                                            if (colors && colors.length >= 2) {
+                                                locationAura = `linear-gradient(125deg, ${colors[0]}, ${colors[1]})`;
+                                                if (colors.length >= 3) {
+                                                    locationAura = `linear-gradient(125deg, ${colors[0]}, ${colors[1]}, ${colors[2]})`;
+                                                }
+                                            } else if (colors && colors.length === 1) {
+                                                locationAura = colors[0]; // Single solid color
+                                            }
+                                        }
+                                    }
+                                    
+                                    return (
+                                        <div 
+                                            key={location.id} 
+                                            className="friend-location-card"
+                                            onClick={() => handleViewLocationOnMap(location)}
+                                        >
+                                            <div 
+                                                className="friend-location-aura"
+                                                style={{ background: locationAura }}
+                                            ></div>
+                                            <div className="friend-location-info">
+                                                <h4>{location.name}</h4>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {selectedCollection.locations.length === 0 && (
+                                    <p className="friend-no-locations">No locations in this collection</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

@@ -45,7 +45,7 @@ class DailyMoodQuestionnaire(Resource):
             main_color = user.aura_color if user and user.aura_color else "BLUE"
             
             # Create the prompt for GPT
-            prompt = f"""
+            prompt = """
 You are generating a 6-question daily mood check-in for a spiritual location-based app called Ora. The user's current aura is: {main_color}.
 
 Your role is to create questions that quietly interpret someone's present energy and mental landscape without directly mentioning emotions or feelings.

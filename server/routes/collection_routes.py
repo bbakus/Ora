@@ -430,9 +430,174 @@ class SingleCollection(Resource):
         
         return collection_data, 200
 
+class CopyCollection(Resource):
+    """Resource for copying a collection from one user to another"""
+    
+    def post(self, user_id):
+        try:
+            print(f"=============== COPY COLLECTION ===============")
+            print(f"Copying collection to user: {user_id}")
+            
+            # Get the request data
+            data = request.get_json()
+            print(f"Request data: {data}")
+            
+            source_user_id = data.get('sourceUserId')
+            collection_id = data.get('collectionId')
+            
+            print(f"Source user: {source_user_id} (type: {type(source_user_id)}), Collection ID: {collection_id} (type: {type(collection_id)})")
+            
+            if not source_user_id or not collection_id:
+                return {"error": "Missing sourceUserId or collectionId"}, 400
+            
+            # Get the source collection with all locations
+            source_collection = Collection.query.filter_by(id=collection_id, user_id=source_user_id).first()
+            if not source_collection:
+                return {"error": f"Source collection not found (ID: {collection_id}, User: {source_user_id})"}, 404
+            
+            print(f"Found source collection: {source_collection.name} with {len(source_collection.locations)} locations")
+            
+            # Create a new collection for the target user
+            new_collection = Collection(
+                name=source_collection.name,
+                user_id=user_id
+            )
+            db.session.add(new_collection)
+            db.session.commit()  # Commit to get the new collection ID
+            
+            print(f"Created new collection with ID: {new_collection.id}")
+            
+            # Get all locations from the source collection manually to avoid ORM validation issues
+            from sqlalchemy import text
+            locations_query = text("""
+                SELECT l.* FROM locations l
+                JOIN collection_locations cl ON l.id = cl.location_id
+                WHERE cl.collection_id = :collection_id
+            """)
+            
+            result = db.session.execute(locations_query, {"collection_id": collection_id})
+            source_locations = result.fetchall()
+            
+            print(f"Found {len(source_locations)} locations to copy")
+            
+            # Copy all locations to the new collection
+            for loc in source_locations:
+                print(f"Adding location {loc.name} to new collection")
+                
+                # First, check if we already have this location in the user's collections
+                existing_loc = Location.query.filter_by(
+                    name=loc.name,
+                    latitude=loc.latitude,
+                    longitude=loc.longitude
+                ).first()
+                
+                if existing_loc:
+                    print(f"Location {loc.name} already exists, adding to collection")
+                    # If the location exists, just add it to the new collection
+                    from sqlalchemy import text
+                    insert_query = text("""
+                        INSERT INTO collection_locations (collection_id, location_id)
+                        VALUES (:collection_id, :location_id)
+                    """)
+                    db.session.execute(insert_query, {
+                        "collection_id": new_collection.id,
+                        "location_id": existing_loc.id
+                    })
+                else:
+                    print(f"Creating new location {loc.name}")
+                    
+                    # Print all attributes
+                    loc_dict = {}
+                    for column in Location.__table__.columns:
+                        column_name = column.name
+                        if hasattr(loc, column_name):
+                            loc_dict[column_name] = getattr(loc, column_name)
+                    print(f"Location attributes: {loc_dict}")
+                    
+                    # Create with specific fields
+                    try:
+                        # Create a new location with just the required fields
+                        new_loc = Location(
+                            name=loc.name,
+                            latitude=0.0 if loc.latitude is None else float(loc.latitude),
+                            longitude=0.0 if loc.longitude is None else float(loc.longitude)
+                        )
+                        
+                        # Add optional fields if they exist
+                        if hasattr(loc, 'description') and loc.description:
+                            new_loc.description = loc.description
+                        
+                        if hasattr(loc, 'aura_color') and loc.aura_color:
+                            new_loc.aura_color = loc.aura_color
+                            
+                        if hasattr(loc, 'aura_shape') and loc.aura_shape:
+                            new_loc.aura_shape = loc.aura_shape
+                        
+                        db.session.add(new_loc)
+                        db.session.flush()  # Get the new location ID
+                        
+                        print(f"Created new location with ID: {new_loc.id}")
+                        
+                        # Link the new location to the collection
+                        link_query = text("""
+                            INSERT INTO collection_locations (collection_id, location_id)
+                            VALUES (:collection_id, :location_id)
+                        """)
+                        db.session.execute(link_query, {
+                            "collection_id": new_collection.id,
+                            "location_id": new_loc.id
+                        })
+                    except Exception as loc_error:
+                        print(f"Error creating location: {str(loc_error)}")
+                        print(f"Will try raw SQL approach instead")
+                        
+                        # Fall back to raw SQL approach
+                        insert_query = text("""
+                            INSERT INTO locations (
+                                name, latitude, longitude, aura_color, aura_shape
+                            ) VALUES (
+                                :name, :latitude, :longitude, :aura_color, :aura_shape
+                            ) RETURNING id
+                        """)
+                        result = db.session.execute(insert_query, {
+                            "name": loc.name,
+                            "latitude": 0.0 if loc.latitude is None else float(loc.latitude),
+                            "longitude": 0.0 if loc.longitude is None else float(loc.longitude),
+                            "aura_color": loc.aura_color if hasattr(loc, 'aura_color') else None,
+                            "aura_shape": loc.aura_shape if hasattr(loc, 'aura_shape') else None
+                        })
+                        new_loc_id = result.fetchone()[0]
+                        
+                        # Link the location to the collection
+                        link_query = text("""
+                            INSERT INTO collection_locations (collection_id, location_id)
+                            VALUES (:collection_id, :location_id)
+                        """)
+                        db.session.execute(link_query, {
+                            "collection_id": new_collection.id,
+                            "location_id": new_loc_id
+                        })
+            
+            db.session.commit()
+            print(f"Successfully copied collection with all locations")
+            
+            # Return the new collection data
+            collection_data = new_collection.to_dict(include_locations=True)
+            print(f"Returning collection data: {collection_data}")
+            print(f"=============== COPY COLLECTION COMPLETE ===============")
+            return collection_data, 201
+            
+        except Exception as e:
+            db.session.rollback()
+            import traceback
+            print(f"Error copying collection: {str(e)}")
+            print(traceback.format_exc())
+            return {"error": str(e)}, 500
+
 # Register routes
 def register_resources(api):
     api.add_resource(CollectionByID, '/api/users/<int:user_id>/collections', '/api/users/<int:user_id>/collections/<int:collection_id>')
     api.add_resource(CollectionAddLocation, '/api/users/<int:user_id>/collections/<int:collection_id>/add_location')
     api.add_resource(CollectionRemoveLocation, '/api/users/<int:user_id>/collections/<int:collection_id>/remove_location')
     api.add_resource(SingleCollection, '/api/collections/<int:collection_id>')
+    api.add_resource(CopyCollection, '/api/users/<int:user_id>/collections/copy')

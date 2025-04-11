@@ -181,10 +181,62 @@ const CollectionLocationsModal = ({ isOpen, onClose, collection, onLocationClick
     }
   };
 
+  // Add helper function to determine collection aura gradient
+  const getCollectionAuraGradient = () => {
+    if (!localCollection || !localCollection.locations || localCollection.locations.length === 0) {
+      return 'linear-gradient(125deg, #6d4aff, #9e8aff)';
+    }
+    
+    // Use the first location's aura for the collection header
+    const firstLocation = localCollection.locations[0];
+    
+    // Determine aura gradient
+    if (firstLocation.aura_color1 && firstLocation.aura_color2) {
+      if (firstLocation.aura_color3) {
+        return `linear-gradient(125deg, ${firstLocation.aura_color1}, ${firstLocation.aura_color2}, ${firstLocation.aura_color3})`;
+      }
+      return `linear-gradient(125deg, ${firstLocation.aura_color1}, ${firstLocation.aura_color2})`;
+    } else if (firstLocation.aura?.color1 && firstLocation.aura?.color2) {
+      return `linear-gradient(125deg, ${firstLocation.aura.color1}, ${firstLocation.aura.color2})`;
+    } else if (firstLocation.aura_color) {
+      // Try to extract colors from aura_color string
+      if (firstLocation.aura_color.includes('gradient')) {
+        // If it's already a gradient string, use it directly
+        return firstLocation.aura_color;
+      } else {
+        // Try to extract hex colors
+        const colors = firstLocation.aura_color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
+        if (colors && colors.length >= 2) {
+          return `linear-gradient(125deg, ${colors[0]}, ${colors[1]})`;
+        } else if (colors && colors.length === 1) {
+          return `linear-gradient(125deg, ${colors[0]}, ${colors[0]})`;
+        }
+      }
+    } else if (firstLocation.aura?.color) {
+      // Try to extract colors from aura.color string
+      if (firstLocation.aura.color.includes('gradient')) {
+        return firstLocation.aura.color;
+      } else {
+        const colors = firstLocation.aura.color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
+        if (colors && colors.length >= 2) {
+          return `linear-gradient(125deg, ${colors[0]}, ${colors[1]})`;
+        } else if (colors && colors.length === 1) {
+          return `linear-gradient(125deg, ${colors[0]}, ${colors[0]})`;
+        }
+      }
+    }
+    
+    // Fallback to a default gradient
+    return 'linear-gradient(125deg, #6d4aff, #9e8aff)';
+  };
+
   return (
     <div className="collection-modal-overlay" onClick={handleOverlayClick}>
       <div className="collection-locations-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
+        <div 
+          className="modal-header"
+          style={{ background: getCollectionAuraGradient() }}
+        >
           {showNameEdit ? (
             <div className="name-edit-container">
               <input
@@ -248,47 +300,45 @@ const CollectionLocationsModal = ({ isOpen, onClose, collection, onLocationClick
                   // Try to extract hex colors
                   const colors = location.aura.color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
                   if (colors && colors.length >= 2) {
-                    auraStyle.background = `linear-gradient(45deg, ${colors[0]}, ${colors[1]})`;
+                    auraStyle.background = `linear-gradient(125deg, ${colors[0]}, ${colors[1]})`;
                   } else if (colors && colors.length === 1) {
-                    auraStyle.background = `linear-gradient(45deg, ${colors[0]}, ${colors[0]})`;
+                    auraStyle.background = `linear-gradient(125deg, ${colors[0]}, ${colors[0]})`;
                   } else {
                     // Fallback to a default gradient
-                    auraStyle.background = `linear-gradient(45deg, #6d4aff, #9e8aff)`;
+                    auraStyle.background = `linear-gradient(125deg, #6d4aff, #9e8aff)`;
                   }
                 }
               } else {
-                // Default gradient if no aura data found
-                auraStyle.background = `linear-gradient(45deg, #6d4aff, #9e8aff)`;
+                // Default fallback
+                auraStyle.background = `linear-gradient(125deg, #6d4aff, #9e8aff)`;
               }
               
               return (
-                <div 
-                  key={location.id} 
+                <div
+                  key={location.id}
                   className={`location-item ${isEditMode ? 'edit-mode' : ''}`}
-                  onClick={() => {
-                    if (!isEditMode && onLocationClick) {
-                      onLocationClick(location);
-                    }
-                  }}
+                  onClick={() => !isEditMode && onLocationClick(location)}
                 >
                   {isEditMode && (
-                    <button 
+                    <button
                       className="delete-button"
                       onClick={(e) => handleDeleteLocation(location.id, e)}
                     >
-                      ×
+                      ✕
                     </button>
                   )}
+                  
+                  <div className="location-aura" style={auraStyle}></div>
+                  
                   <div className="location-info">
                     <h3>{location.name}</h3>
                   </div>
-                  <div className="location-aura" style={auraStyle}></div>
                 </div>
               );
             })
           ) : (
             <div className="empty-locations">
-              <p>No locations in this collection</p>
+              No locations in this collection
             </div>
           )}
         </div>

@@ -182,7 +182,7 @@
     justify-content: center;
     z-index: 1;
     background: transparent;
-    filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.3));
+    
 }
 
 /* Discover Widget */
@@ -540,6 +540,19 @@
     
     .collections-grid {
         flex-direction: column;
+        height: auto;
+    }
+    
+    .collections-column-wrapper {
+        max-width: 100%;
+        width: 100%;
+        margin-bottom: 30px;
+        height: auto;
+    }
+    
+    .collections-column {
+        max-height: none;
+        padding-bottom: 20px;
     }
     
     .dashboard-header h1 {
@@ -550,8 +563,34 @@
         font-size: 32px;
     }
     
-    .location-card h3, .collection-content h3 {
-        font-size: 24px;
+    /* Make collections and recent cards more similar on mobile */
+    .saved-collection-card,
+    .recent-location-card {
+        height: 150px;
+    }
+    
+    .saved-collection-content h3,
+    .recent-location-content h3 {
+        font-size: 32px;
+    }
+    
+    .saved-collection-content p {
+        font-size: 22px;
+    }
+    
+    .saved-collection-aura,
+    .recent-location-aura {
+        width: 120px;
+    }
+    
+    .saved-collection-content,
+    .recent-location-content {
+        width: calc(100% - 120px);
+    }
+    
+    .collections-widget {
+        max-height: none;
+        overflow: visible;
     }
 }
 
@@ -628,17 +667,19 @@
     flex: 3;
     position: relative;
     z-index: 1;
-    min-height: 300px; /* Decreased from 500px */
+    min-height: 300px;
     padding-bottom: 10px !important;
     margin-bottom: 10px !important;
-    max-height: 600px;
+    max-height: 610px; /* Increased to fit 3 cards with spacing */
+    overflow: hidden;
 }
 
 .collections-container {
     margin-top: 20px;
     position: relative;
     z-index: 1;
-    
+    height: calc(100% - 80px); /* Subtract header space */
+    overflow: hidden;
 }
 
 .collections-grid {
@@ -648,28 +689,171 @@
     margin-bottom: 20px;
     position: relative;
     z-index: 1;
+    width: 100%;
+    height: 100%;
 }
 
 .collections-column-wrapper {
-    flex: 1;
+    flex: 1 1 0;
     display: flex;
     flex-direction: column;
     position: relative;
     z-index: 1;
+    min-width: 0; /* Ensures proper flex sizing */
+    max-width: 50%;
+    height: 100%;
+    overflow: hidden;
 }
 
 .collections-column {
     display: flex;
     flex-direction: column;
-    gap: 12px; /* Keep small gap */
+    gap: 20px;
     position: relative;
     z-index: 1;
-    max-height: 450px; /* Decreased from 600px */
+    max-height: 700px; /* Increased to fit 3 cards properly */
     overflow-y: auto;
     padding-right: 10px;
-    padding-bottom: 0;
+    padding-bottom: 20px;
     scrollbar-width: thin;
     scrollbar-color: #00b7c2 #2a2a2a;
+    width: 100%;
+    flex: 1;
+}
+
+/* === COLLECTIONS CARDS (LEFT COLUMN) === */
+.saved-collection-card {
+    padding: 0;
+    border-radius: 14px;
+    background-color: #2a2a2a !important;
+    border: 1px solid #333;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    height: 160px; /* Reduced from 250px */
+    flex-shrink: 0; /* Prevents card from shrinking */
+    margin-bottom: 0; /* Remove any margin causing overlap */
+}
+
+.saved-collection-card:hover {
+    background-color: #333 !important;
+    transform: translateY(-4px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border: 1px solid #444;
+}
+
+.saved-collection-card:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.saved-collection-content {
+    flex: 1;
+    position: relative;
+    z-index: 1;
+    padding: 20px 30px;
+    width: calc(100% - 160px); /* Adjusted for large aura */
+}
+
+.saved-collection-content h3 {
+    margin: 0;
+    font-size: 48px; /* Larger text */
+    color: #f5f5f5 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.saved-collection-content p {
+    margin: 12px 0 0 0;
+    font-size: 28px; /* Larger count */
+    color: #aaa;
+}
+
+.saved-collection-aura {
+    width: 120px; /* Wider aura */
+    height: 100%;
+    border-radius: 14px 0 0 14px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+.saved-collection-card:hover .saved-collection-aura {
+    width: 180px;
+}
+
+/* === RECENT LOCATION CARDS (RIGHT COLUMN) === */
+.recent-location-card {
+    padding: 0;
+    border-radius: 14px;
+    background-color: #2a2a2a !important;
+    border: 1px solid #333;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    height: 160px; /* Shorter height for recents */
+}
+
+.recent-location-card:hover {
+    background-color: #333 !important;
+    transform: translateY(-4px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border: 1px solid #444;
+}
+
+.recent-location-card:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.recent-location-content {
+    flex: 1;
+    position: relative;
+    z-index: 1;
+    padding: 20px 30px;
+    width: calc(100% - 120px); /* Adjusted for smaller aura */
+}
+
+.recent-location-content h3 {
+    margin: 0;
+    font-size: 38px; /* Smaller text */
+    color: #f5f5f5 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.recent-location-aura {
+    width: 120px; /* Thinner aura */
+    height: 100%;
+    border-radius: 14px 0 0 14px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+.recent-location-card:hover .recent-location-aura {
+    width: 140px;
+}
+
+/* Remove old collection card styles to avoid conflicts */
+.collection-card, .collection-content, .collection-aura-placeholder {
+    display: none; /* Hide these completely to avoid any conflicts */
 }
 
 .column-title {
@@ -701,61 +885,6 @@
 
 .collections-column::-webkit-scrollbar-thumb:hover {
     background: #4ecdc4;
-}
-
-.collection-card {
-    padding: 20px;
-    border-radius: 14px;
-    background-color: #2a2a2a !important;
-    border: 1px solid #333;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    position: relative;
-    z-index: 1;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.collection-card:hover {
-    background-color: #333 !important;
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    border: 1px solid #444;
-}
-
-.collection-card:active {
-    transform: translateY(1px);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.collection-content {
-    flex: 1;
-    position: relative;
-    z-index: 1;
-}
-
-.collection-content h3 {
-    margin: 0;
-    font-size: 40px;
-    color: #f5f5f5 !important;
-}
-
-.collection-content p {
-    margin: 5px 0 0 0;
-    font-size: 16px;
-    color: #aaa;
-}
-
-.collection-aura-placeholder {
-    width: 90px;
-    height: 90px;
-    border-radius: 50%;
-    margin-left: 24px;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 1;
 }
 
 /* Action Button - Updated with teal gradient */
@@ -1022,4 +1151,22 @@
     border-radius: 14px;
     border: 1px solid #333;
     margin-bottom: 16px;
+}
+
+/* Make sure collections column shows exactly 3 cards */
+.collections-column-wrapper:first-child .collections-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Ensure the collections column has correct spacing and overflows properly */
+.collections-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    padding-right: 15px;
+    padding-bottom: 20px;
+    width: 100%;
 } 

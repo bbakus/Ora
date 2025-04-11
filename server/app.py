@@ -29,7 +29,7 @@ def create_app(config_class=Config, instance_path=None):
     migrate.init_app(app, db)
     
     # Enhanced CORS configuration
-    CORS(app, resources={r"/*": {"origins": "*", "allow_headers": ["Content-Type"], "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]}})
+    CORS(app, resources={r"/api/*": {"origins": "*", "allow_headers": ["Content-Type", "Authorization"]}})
     
     # Import and register routes
     with app.app_context():

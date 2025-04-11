@@ -960,16 +960,16 @@ function DashboardScreen() {
             return (
                 <div 
                     key={location.id} 
-                    className="collection-card"
+                    className="recent-location-card"
                     onClick={() => handleLocationClick(location)}
                 >
-                    <div className="collection-content">
-                        <h3>{location.name.split(' ').slice(0, 4).join(' ')}{location.name.split(' ').length > 4 ? '...' : ''}</h3>
-                    </div>
                     <div 
-                        className="collection-aura-placeholder"
+                        className="recent-location-aura"
                         style={{ background: auraColor }}
                     ></div>
+                    <div className="recent-location-content">
+                        <h3>{location.name.split(' ').slice(0, 4).join(' ')}{location.name.split(' ').length > 4 ? '...' : ''}</h3>
+                    </div>
                 </div>
             );
         });
@@ -1047,37 +1047,24 @@ function DashboardScreen() {
             // Extract aura color from the first location if available
             if (collection.locations && collection.locations.length > 0) {
                 const firstLocation = collection.locations[0];
-                console.log(`Collection ${collection.name} (${collection.id}):`, {
-                    hasLocations: true,
-                    locationsCount: collection.locations.length,
-                    firstLocation,
-                    hasAuraColor1: !!firstLocation.aura_color1,
-                    hasAuraColor2: !!firstLocation.aura_color2,
-                    hasAuraColor: !!firstLocation.aura_color,
-                    hasAuraObject: !!firstLocation.aura
-                });
                 
                 // Method 1: Check for aura_color1 and aura_color2
                 if (firstLocation.aura_color1 && firstLocation.aura_color2) {
                     auraColor = `linear-gradient(125deg, ${firstLocation.aura_color1}, ${firstLocation.aura_color2})`;
-                    console.log(`Using Method 1: aura_color1 & aura_color2 for ${collection.name}`, auraColor);
                 }
                 // Method 2: Check for gradient string in aura_color
                 else if (firstLocation.aura_color) {
                     // If it's already a gradient string, use it directly
                     if (firstLocation.aura_color.includes('gradient')) {
                         auraColor = firstLocation.aura_color;
-                        console.log(`Using Method 2a: gradient string for ${collection.name}`, auraColor);
                     } 
                     // Try to extract hex colors from a string
                     else {
                         const colors = firstLocation.aura_color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
                         if (colors && colors.length >= 2) {
-                            auraColor = `linear-gradient(45deg, ${colors[0]}, ${colors[1]})`;
-                            console.log(`Using Method 2b: extracted colors for ${collection.name}`, auraColor);
+                            auraColor = `linear-gradient(125deg, ${colors[0]}, ${colors[1]})`;
                         } else if (colors && colors.length === 1) {
-                            auraColor = `linear-gradient(45deg, ${colors[0]}, ${colors[0]})`;
-                            console.log(`Using Method 2c: single extracted color for ${collection.name}`, auraColor);
+                            auraColor = `linear-gradient(125deg, ${colors[0]}, ${colors[0]})`;
                         }
                     }
                 }
@@ -1085,43 +1072,38 @@ function DashboardScreen() {
                 else if (firstLocation.aura) {
                     if (firstLocation.aura.color1 && firstLocation.aura.color2) {
                         auraColor = `linear-gradient(125deg, ${firstLocation.aura.color1}, ${firstLocation.aura.color2})`;
-                        console.log(`Using Method 3a: aura.color1 & aura.color2 for ${collection.name}`, auraColor);
                     } else if (firstLocation.aura.color) {
                         // If it's already a gradient string, use it directly
                         if (firstLocation.aura.color.includes('gradient')) {
                             auraColor = firstLocation.aura.color;
-                            console.log(`Using Method 3b: aura.color gradient for ${collection.name}`, auraColor);
                         }
                         // Try to extract hex colors from the string
                         else {
                             const colors = firstLocation.aura.color.match(/#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3}/g);
                             if (colors && colors.length >= 2) {
                                 auraColor = `linear-gradient(125deg, ${colors[0]}, ${colors[1]})`;
-                                console.log(`Using Method 3c: extracted colors from aura.color for ${collection.name}`, auraColor);
                             } else if (colors && colors.length === 1) {
                                 auraColor = `linear-gradient(125deg, ${colors[0]}, ${colors[0]})`;
-                                console.log(`Using Method 3d: single extracted color from aura.color for ${collection.name}`, auraColor);
                             }
                         }
                     }
                 }
-            } else {
-                console.log(`Collection ${collection.name} (${collection.id}): No locations available, using default aura color`);
             }
             
             return (
                 <div 
                     key={collection.id} 
-                    className="collection-card" 
+                    className="saved-collection-card" 
                     onClick={() => handleOpenCollectionModal(collection)}
                 >
-                    <div className="collection-content">
-                        <h3>{collection.name}</h3>
-                    </div>
                     <div 
-                        className="collection-aura-placeholder"
+                        className="saved-collection-aura"
                         style={{ background: auraColor }}
                     ></div>
+                    <div className="saved-collection-content">
+                        <h3>{collection.name}</h3>
+                        <p>{collection.location_count || (collection.locations ? collection.locations.length : 0)} locations</p>
+                    </div>
                 </div>
             );
         });
