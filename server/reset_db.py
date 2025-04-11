@@ -23,10 +23,42 @@ def reset_database():
     app = create_app()
     
     with app.app_context():
+        # Detect database type
+        is_postgres = False
+        try:
+            # Get the database URL from app config
+            db_url = app.config['SQLALCHEMY_DATABASE_URI'].lower()
+            
+            if 'postgresql' in db_url or 'postgres' in db_url:
+                is_postgres = True
+                print("Detected PostgreSQL database")
+            elif 'sqlite' in db_url:
+                print("Detected SQLite database")
+            else:
+                # Fallback to querying the database
+                try:
+                    result = db.session.execute(text("SELECT version();")).scalar()
+                    if result and "postgresql" in result.lower():
+                        is_postgres = True
+                        print("Detected PostgreSQL database via version query")
+                    else:
+                        print("Detected non-PostgreSQL database via version query")
+                except Exception:
+                    print("Could not detect database type via version query. Assuming SQLite.")
+        except Exception as e:
+            # Fallback - if can't detect, assume SQLite
+            print(f"Could not detect database type from URL: {e}. Assuming SQLite.")
+        
         # Step 1: Disable foreign key checks
         print("Disabling foreign key constraints...")
         try:
-            db.session.execute(text('SET session_replication_role = replica;'))
+            if is_postgres:
+                # For PostgreSQL, use transaction-level disable of constraints
+                # This approach avoids needing superuser privileges
+                db.session.execute(text('SET CONSTRAINTS ALL DEFERRED;'))
+            else:
+                # For SQLite
+                db.session.execute(text('PRAGMA foreign_keys = OFF;'))
             print("Foreign key constraints disabled.")
         except Exception as e:
             print(f"Warning: Could not disable foreign key checks: {e}")
@@ -61,7 +93,13 @@ def reset_database():
         # Step 4: Re-enable foreign key checks
         print("Re-enabling foreign key constraints...")
         try:
-            db.session.execute(text('SET session_replication_role = DEFAULT;'))
+            if is_postgres:
+                # For PostgreSQL, constraints will be checked at commit time
+                # No need to explicitly re-enable
+                pass
+            else:
+                # For SQLite
+                db.session.execute(text('PRAGMA foreign_keys = ON;'))
             print("Foreign key constraints re-enabled.")
         except Exception as e:
             print(f"Warning: Could not re-enable foreign key checks: {e}")
