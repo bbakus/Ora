@@ -17,7 +17,7 @@ class User(BaseModel):
 
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    hashed_password = db.Column(db.String(128))
+    hashed_password = db.Column(db.String(512))
     aura_color = db.Column(db.String(200))  # Updated to handle gradient strings
     aura_shape = db.Column(db.String(20))  # Shape of their aura
     response_speed = db.Column(db.String(20))  # Speed of response for animations
