@@ -6,19 +6,45 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from server.app import create_app
-from server.extensions import db
-from flask_migrate import upgrade
+from server.extensions import db, migrate
+from flask_migrate import upgrade, init, migrate as create_migration
 
 def init_db():
     """Initialize the database for deployment"""
     print("Initializing database for deployment...")
     app = create_app()
     
+    # Configure Flask-Migrate to use the root migrations directory
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    migrations_dir = os.path.join(root_dir, 'migrations')
+    app.config['MIGRATION_DIR'] = migrations_dir
+    
     with app.app_context():
         try:
+            # Check if migrations directory exists
+            if not os.path.exists(migrations_dir):
+                print(f"Migrations directory not found at {migrations_dir}. Initializing...")
+                # Change to root directory before initializing
+                original_dir = os.getcwd()
+                os.chdir(root_dir)
+                init(directory=migrations_dir)
+                
+                # Create initial migration
+                print("Creating initial migration...")
+                create_migration(message='initial migration', directory=migrations_dir)
+                
+                # Change back to original directory
+                os.chdir(original_dir)
+            else:
+                print(f"Found migrations directory at {migrations_dir}")
+            
             # Run database migrations
             print("Running database migrations...")
-            upgrade()
+            upgrade(directory=migrations_dir)
+            
+            # Create tables if they don't exist (fallback)
+            print("Ensuring all tables exist...")
+            db.create_all()
             
             print("Database initialization complete.")
         except Exception as e:
