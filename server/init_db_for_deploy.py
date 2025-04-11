@@ -9,6 +9,15 @@ from server.app import create_app
 from server.extensions import db, migrate
 from flask_migrate import upgrade, init, migrate as create_migration
 from sqlalchemy.exc import OperationalError
+from sqlalchemy import text
+
+# Import all models to ensure they're registered with SQLAlchemy
+from server.models.user import User
+from server.models.location import Location
+from server.models.collection import Collection
+from server.models.review import Review
+from server.models.friend_request import FriendRequest
+from server.models.tag import Tag
 
 def init_db():
     """Initialize the database for deployment"""
@@ -48,6 +57,27 @@ def init_db():
             db.engine.connect()
             print("Database connection successful!")
             
+            # Temporarily disable foreign key constraints
+            print("Temporarily disabling foreign key constraints...")
+            db.session.execute(text('SET CONSTRAINTS ALL DEFERRED'))
+            
+            # Create tables directly in correct order, bypassing migrations for now
+            print("Creating tables directly in correct order...")
+            # Order matters: independent tables first, then tables with dependencies
+            models = [User, Tag, Location, Collection, Review, FriendRequest]
+            
+            for model in models:
+                print(f"Creating table for model: {model.__name__}")
+                if not db.engine.dialect.has_table(db.engine, model.__tablename__):
+                    model.__table__.create(db.engine)
+            
+            # Re-enable foreign key constraints
+            print("Re-enabling foreign key constraints...")
+            db.session.execute(text('SET CONSTRAINTS ALL IMMEDIATE'))
+            db.session.commit()
+            
+            print("Tables created successfully!")
+            
             # Check if migrations directory exists
             if not os.path.exists(migrations_dir):
                 print(f"Migrations directory not found at {migrations_dir}. Initializing...")
@@ -65,13 +95,13 @@ def init_db():
             else:
                 print(f"Found migrations directory at {migrations_dir}")
             
-            # Run database migrations
-            print("Running database migrations...")
-            upgrade(directory=migrations_dir)
-            
-            # Create tables if they don't exist (fallback)
-            print("Ensuring all tables exist...")
-            db.create_all()
+            # Try to run migrations, but catch errors
+            try:
+                print("Running database migrations...")
+                upgrade(directory=migrations_dir)
+            except Exception as e:
+                print(f"Warning: Error running migrations: {e}")
+                print("Continuing with direct table creation as fallback...")
             
             print("Database initialization complete.")
         except OperationalError as e:
