@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import './AuthScreen.css';
+import API_BASE_URL from '../../config/api';
 
 function SignupScreen() {
     const navigate = useNavigate();
@@ -11,6 +12,7 @@ function SignupScreen() {
         confirmPassword: ''
     });
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
         setFormData({
@@ -21,15 +23,17 @@ function SignupScreen() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
-
+        
         if (formData.password !== formData.confirmPassword) {
             setError('Passwords do not match');
             return;
         }
-
+        
+        setLoading(true);
+        setError('');
+        
         try {
-            const response = await fetch('http://localhost:5001/api/auth/signup', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -40,24 +44,23 @@ function SignupScreen() {
                     password: formData.password
                 })
             });
-
+            
             if (response.ok) {
                 const userData = await response.json();
                 console.log("Signup successful, received user data:", userData);
-                console.log("User ID from server:", userData.id);
-                console.log("User ID (string) from server:", userData.id_str);
                 
                 localStorage.setItem('user', JSON.stringify(userData));
                 
-                const userId = userData.id_str || userData.id;
-                
-                navigate(`/auth/${userId}/questionnaire`);
+                navigate(`/auth/${userData.id}/questionnaire`);
             } else {
                 const errorData = await response.json();
-                setError(errorData.error || 'Error creating account');
+                setError(errorData.error || 'Signup failed');
             }
         } catch (err) {
-            setError('Error connecting to server');
+            console.error('Signup error:', err);
+            setError('Network error. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -99,7 +102,7 @@ function SignupScreen() {
                         onChange={handleChange}
                         required
                     />
-                    <button type="submit">Sign Up</button>
+                    <button type="submit" disabled={loading}>Sign Up</button>
                 </form>
                 <p>Already have an account? <Link to="/auth">Login</Link></p>
             </div>

@@ -1,50 +1,47 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import './AuthScreen.css';
+import API_BASE_URL from '../../config/api';
 
 function AuthScreen() {
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
 
         try {
-            const response = await fetch('http://localhost:5001/api/auth/login', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    email,
-                    password
-                })
+                body: JSON.stringify({ email, password }),
             });
 
             if (response.ok) {
-                const userData = await response.json();
-                console.log("Login successful, received user data:", userData);
-                console.log("User ID from server:", userData.id);
-                console.log("User ID (string) from server:", userData.id_str);
+                const data = await response.json();
+                console.log('Login successful:', data);
                 
-                localStorage.setItem('user', JSON.stringify(userData));
+                // Store the token and user info
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
                 
-                // Use string ID if available, otherwise fall back to regular ID
-                const userId = userData.id_str || userData.id;
-                
-                // Redirect to daily mood questionnaire instead of dashboard
-                const path = `/auth/${userId}/daily-mood`;
-                console.log("Navigating to:", path);
-                navigate(path);
+                // Navigate to the user's dashboard
+                navigate(`/dashboard/${data.user.id}`);
             } else {
                 const errorData = await response.json();
-                setError(errorData.error || 'Invalid email or password');
+                setError(errorData.error || 'Login failed');
             }
         } catch (err) {
-            setError('Error connecting to server');
+            console.error('Login error:', err);
+            setError('Network error. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -68,7 +65,7 @@ function AuthScreen() {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                     />
-                    <button type="submit">Login</button>
+                    <button type="submit" disabled={loading}>Login</button>
                 </form>
                 <p>Don't have an account? <Link to="/signup">Sign Up</Link></p>
             </div>

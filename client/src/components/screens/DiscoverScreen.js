@@ -6,6 +6,7 @@ import LocationModal from '../modals/LocationModal';
 import AddToCollectionModal from '../modals/AddToCollectionModal';
 import AuraVisualization from '../AuraVisualization';
 import './DiscoverScreen.css';
+import API_BASE_URL from '../../config/api';
 
 // NYC coordinates as default center
 const DEFAULT_CENTER = {
@@ -405,7 +406,7 @@ function DiscoverScreen() {
     const fetchLocations = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5001/api/locations');
+        const response = await fetch(`${API_BASE_URL}/api/locations`);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch locations: ${response.status}`);
@@ -420,8 +421,8 @@ function DiscoverScreen() {
           !isNaN(loc.latitude) && !isNaN(loc.longitude)
         );
         
-        if (validLocations.length !== data.length) {
-          console.warn(`Filtered out ${data.length - validLocations.length} locations with invalid coordinates`);
+        if (validLocations.length === 0) {
+          console.warn('No valid locations found with coordinates');
         }
         
         // Add additional properties to each location for rendering and interaction

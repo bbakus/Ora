@@ -8,6 +8,7 @@ import AddFriendModal from '../modals/AddFriendModal';
 import FriendRequestsModal from '../modals/FriendRequestsModal';
 import CollectionLocationsModal from '../modals/CollectionLocationsModal';
 import ViewFriendModal from '../modals/ViewFriendModal';
+import API_BASE_URL from '../../config/api';
 
 // NYC center coordinates as default
 const DEFAULT_CENTER = {
@@ -257,97 +258,53 @@ function DashboardScreen() {
 
     useEffect(() => {
         const fetchUserData = async () => {
+            setLoading(true);
+            setError(null);
+
             try {
-                console.log("Fetching user data for ID:", userId);
-                
-                const storedUser = localStorage.getItem('user');
-                let storedUserData = null;
-                
-                if (storedUser) {
-                    storedUserData = JSON.parse(storedUser);
-                    console.log("User data from localStorage:", storedUserData);
-                    
-                    if (storedUserData.aura_color || storedUserData.auraColor) {
-                        console.log("Using user data with aura from localStorage");
-                        const processedData = {
-                            ...storedUserData,
-                            username: storedUserData.username || "User",
-                            aura_color: storedUserData.aura_color || storedUserData.auraColor || 'linear-gradient(125deg, #6d4aff, #9e8aff)',
-                            aura_shape: storedUserData.aura_shape || storedUserData.auraShape || determineAuraShape(5),
-                            response_speed: storedUserData.response_speed || storedUserData.responseSpeed || 'medium'
-                        };
-                        setUserData(processedData);
-                        setLoading(false);
-                        return;
+                // Try to get cached data first for faster rendering
+                const cachedData = localStorage.getItem(`user_${userId}`);
+                if (cachedData) {
+                    try {
+                        const parsedData = JSON.parse(cachedData);
+                        if (parsedData && Date.now() - parsedData.timestamp < 600000) { // 10 mins cache
+                            console.log("Using cached user data from localStorage");
+                            setUserData(parsedData.data);
+                            setPendingRequestsCount(parsedData.data.pendingRequestsCount || 0);
+                            return;
+                        }
+                    } catch (e) {
+                        console.error("Error parsing cached data:", e);
                     }
                 }
-                
-                const apiUrl = `http://localhost:5001/api/users/${userId}`;
+
+                console.log("Fetching user data for ID:", userId);
+                const apiUrl = `${API_BASE_URL}/api/users/${userId}`;
                 console.log("API URL:", apiUrl);
-                
+
                 const response = await fetch(apiUrl);
                 console.log("API Response status:", response.status);
-                
+
                 if (!response.ok) {
-                    if (storedUserData) {
-                        console.log("Using localStorage data as fallback");
-                        const processedData = {
-                            ...storedUserData,
-                            username: storedUserData.username || "User",
-                            aura_color: storedUserData.aura_color || storedUserData.auraColor || 'linear-gradient(125deg, #6d4aff, #9e8aff)',
-                            aura_shape: storedUserData.aura_shape || storedUserData.auraShape || determineAuraShape(5),
-                            response_speed: storedUserData.response_speed || storedUserData.responseSpeed || 'medium'
-                        };
-                        setUserData(processedData);
-                        setLoading(false);
-                        return;
-                    }
                     throw new Error(`Failed to fetch user data: ${response.status}`);
                 }
-                
+
                 const data = await response.json();
-                console.log("API Response data:", data);
-                
-                // Ensure we have valid aura data
-                if (!data.aura_color || !data.aura_color.includes('gradient')) {
-                    console.warn("Invalid or missing aura color gradient, using default");
-                    
-                    // Extract any individual colors that might be available
-                    const colors = [];
-                    if (data.aura_color1) colors.push(data.aura_color1);
-                    if (data.aura_color2) colors.push(data.aura_color2);
-                    if (data.aura_color3) colors.push(data.aura_color3);
-                    
-                    // If we have colors, create gradient from them
-                    if (colors.length > 0) {
-                        while (colors.length < 3) {
-                            colors.push(colors[colors.length - 1] || '#0000FF');
-                        }
-                        data.aura_color = `linear-gradient(45deg, ${colors.join(', ')})`;
-                    } else {
-                        // Default gradient
-                        data.aura_color = 'linear-gradient(45deg, #0000FF, #800080, #00FF00)';
-                    }
-                }
-                
-                // Ensure we have valid shape
-                if (!data.aura_shape || !['sparkling', 'flowing', 'pulsing', 'balanced'].includes(data.aura_shape)) {
-                    console.warn("Invalid or missing aura shape, using default");
-                    data.aura_shape = 'balanced';
-                }
-                
-                const processedData = {
-                    ...data,
-                    username: data.username || "User",
-                    aura_color: data.aura_color,
-                    aura_shape: data.aura_shape,
-                    response_speed: 'medium' // Always force to medium
-                };
-                
-                setUserData(processedData);
-                setLoading(false);
+                console.log("User data received:", data);
+
+                setUserData(data);
+                setPendingRequestsCount(data.pendingRequestsCount || 0);
+
+                // Update cache
+                localStorage.setItem(`user_${userId}`, JSON.stringify({
+                    data,
+                    timestamp: Date.now()
+                }));
+                console.log("Updated user data in localStorage");
             } catch (error) {
-                console.error('Error fetching user data:', error);
+                console.error("Error fetching user data:", error);
+                setError(error.message);
+            } finally {
                 setLoading(false);
             }
         };
@@ -476,7 +433,7 @@ function DashboardScreen() {
             console.log("Fetching friends for user:", userId);
             
             // Fetch friends from API
-            const response = await fetch(`http://localhost:5001/api/users/${userId}/friends`);
+            const response = await fetch(`${API_BASE_URL}/api/users/${userId}/friends`);
             
             if (!response.ok) {
                 throw new Error(`Failed to fetch friends: ${response.status}`);
@@ -550,7 +507,7 @@ function DashboardScreen() {
             setLoading(true);
             
             // Fetch collections from the API
-            fetch(`http://localhost:5001/api/users/${userId}/collections`)
+            fetch(`${API_BASE_URL}/api/users/${userId}/collections`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Failed to fetch collections');
@@ -562,7 +519,7 @@ function DashboardScreen() {
                     
                     // Fetch locations for each collection to get their auras
                     const collectionsWithLocationPromises = collections.map(collection => 
-                        fetch(`http://localhost:5001/api/users/${userId}/collections/${collection.id}`)
+                        fetch(`${API_BASE_URL}/api/users/${userId}/collections/${collection.id}`)
                             .then(response => response.ok ? response.json() : collection)
                             .catch(error => {
                                 console.error(`Error fetching locations for collection ${collection.id}:`, error);
@@ -587,7 +544,7 @@ function DashboardScreen() {
                             if (storedRecentLocations.length > 0) {
                                 // Create promises for each location to fetch its complete data
                                 const locationPromises = storedRecentLocations.map(location => 
-                                    fetch(`http://localhost:5001/api/locations/${location.id}`)
+                                    fetch(`${API_BASE_URL}/api/locations/${location.id}`)
                                         .then(response => {
                                             if (response.ok) return response.json();
                                             return location; // Return original location if fetch fails
@@ -649,7 +606,7 @@ function DashboardScreen() {
             console.log("Creating new collection:", name);
             
             // Call the API to create a new collection
-            const response = await fetch(`http://localhost:5001/api/users/${userId}/collections`, {
+            const response = await fetch(`${API_BASE_URL}/api/users/${userId}/collections`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -704,7 +661,7 @@ function DashboardScreen() {
             console.log(`Adding location ${location.id} to collection ${collectionId}`);
             
             // Call API to add location to collection
-            const response = await fetch(`http://localhost:5001/api/users/${userId}/collections/${collectionId}/add_location`, {
+            const response = await fetch(`${API_BASE_URL}/api/users/${userId}/collections/${collectionId}/add_location`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -775,7 +732,7 @@ function DashboardScreen() {
         const fetchAndAddLocation = async () => {
             try {
                 // Try to fetch complete location data
-                const response = await fetch(`http://localhost:5001/api/locations/${location.id}`);
+                const response = await fetch(`${API_BASE_URL}/api/locations/${location.id}`);
                 let locationWithAura = location;
                 
                 if (response.ok) {
@@ -831,7 +788,7 @@ function DashboardScreen() {
     // Add a function to refresh collections on demand
     const refreshCollections = () => {
         if (userId) {
-            fetch(`http://localhost:5001/api/users/${userId}/collections`)
+            fetch(`${API_BASE_URL}/api/users/${userId}/collections`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Failed to fetch collections');
@@ -990,7 +947,7 @@ function DashboardScreen() {
     const fetchCollectionWithLocations = async (collectionId) => {
         try {
             // First try the API
-            const response = await fetch(`http://localhost:5001/api/users/${userId}/collections/${collectionId}`);
+            const response = await fetch(`${API_BASE_URL}/api/users/${userId}/collections/${collectionId}`);
             
             if (response.ok) {
                 const data = await response.json();
@@ -1331,7 +1288,7 @@ function DashboardScreen() {
     // Function to fetch pending friend requests count
     const fetchPendingRequestsCount = async () => {
         try {
-            const response = await fetch(`http://localhost:5001/api/friend_requests?user_id=${userId}&type=received`);
+            const response = await fetch(`${API_BASE_URL}/api/friend_requests?user_id=${userId}&type=received`);
             
             if (!response.ok) {
                 throw new Error(`Failed to fetch friend requests: ${response.status}`);
