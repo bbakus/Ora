@@ -309,8 +309,23 @@ const LocationModal = ({ location, onClose, onAddToCollection }) => {
   const openInGoogleMaps = () => {
     const { latitude, longitude, name } = location;
     const encodedName = encodeURIComponent(name);
-    // Try to open in app first on mobile, fallback to web
-    const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}&query_place_id=${location.google_place_id || ''}&query=${encodedName}`;
+    
+    let googleMapsUrl;
+    
+    // If we have a Google Place ID, use that as priority (most accurate)
+    if (location.google_place_id) {
+      googleMapsUrl = `https://www.google.com/maps/place/?q=place_id:${location.google_place_id}`;
+    } 
+    // If we have a name and address, use that next
+    else if (location.address) {
+      const encodedAddress = encodeURIComponent(location.address);
+      googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedName}+${encodedAddress}`;
+    }
+    // Fall back to coordinates only if that's all we have
+    else {
+      googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+    }
+    
     window.open(googleMapsUrl, '_blank');
   };
 
